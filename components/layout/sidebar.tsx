@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { MindloomLogo } from '@/components/ui/mindloom-logo';
 
 const navSections = [
   {
@@ -75,20 +76,7 @@ export default function Sidebar() {
       {/* ─── Logo ─── */}
       <div className="h-14 flex items-center px-5" style={{ borderBottom: '1px solid var(--border)' }}>
         <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="relative">
-            <div
-              className="w-6 h-6 rounded-md flex items-center justify-center font-semibold text-[10px] text-white"
-              style={{ background: 'var(--accent)' }}
-            >
-              S
-            </div>
-          </div>
-          <span className="text-sm font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-            Mindloom
-          </span>
-          <span className="badge text-[10px] px-1.5 py-0.5 ml-auto" style={{ background: 'var(--accent-subtle)', color: 'var(--accent)', border: '1px solid rgba(109,92,255,0.15)' }}>
-            v1
-          </span>
+          <MindloomLogo size={24} showWordmark showBadge />
         </Link>
       </div>
 

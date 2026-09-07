@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import LoginForm from '@/components/auth/login-form';
+import { MindloomLogo } from '@/components/ui/mindloom-logo';
 
 export const metadata: Metadata = {
   title: 'Log In',
@@ -16,17 +17,8 @@ export default function LoginPage() {
           <div className="relative rounded-[var(--radius-lg)] p-8" style={{ background: 'var(--bg-elevated)' }}>
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="relative inline-block mb-4">
-                <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center font-semibold text-sm text-white"
-                  style={{ background: 'var(--accent)' }}
-                >
-                  S
-                </div>
-                <div
-                  className="absolute -inset-1 rounded-lg opacity-40"
-                  style={{ background: 'var(--accent)', filter: 'blur(12px)', zIndex: -1 }}
-                />
+              <div className="inline-block mb-4">
+                <MindloomLogo size="lg" />
               </div>
               <h1 className="text-xl font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>
                 Welcome back

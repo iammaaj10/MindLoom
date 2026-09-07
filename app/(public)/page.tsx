@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import AiOrb from '@/components/ui/ai-orb';
+import { MindloomLogo } from '@/components/ui/mindloom-logo';
 
 export const metadata: Metadata = {
   title: 'Mindloom — Your Personal AI Companion',
@@ -75,8 +76,8 @@ export default function LandingPage() {
                 </div>
 
                 <div className="flex gap-4">
-                  <div className="w-8 h-8 rounded bg-white text-black flex items-center justify-center shrink-0">
-                    <span className="text-xs font-bold">M</span>
+                  <div className="shrink-0">
+                    <MindloomLogo size={32} />
                   </div>
                   <div className="pt-1">
                     <div className="flex items-center gap-2 mb-2">
