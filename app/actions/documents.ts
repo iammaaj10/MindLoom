@@ -5,6 +5,8 @@ import DocumentModel from '@/lib/db/models/document';
 import Chunk from '@/lib/db/models/chunk';
 import { getSession } from '@/lib/auth/session';
 import { saveFile, deleteFile, getFileType } from '@/lib/storage';
+import { extractText } from '@/lib/ingestion/extractor';
+import { chunkText } from '@/lib/ingestion/chunker';
 import { revalidatePath } from 'next/cache';
 
 // ─── Types ────────────────────────────────────────────
@@ -67,19 +69,56 @@ export async function uploadDocument(
   try {
     // 1. Save to disk
     const { fileUrl } = await saveFile(session.userId, file);
+    const fileType = getFileType(file.name);
 
-    // 2. Create MongoDB record
+    // 2. Create initial MongoDB record
     await dbConnect();
-    await DocumentModel.create({
+    const newDoc = await DocumentModel.create({
       userId: session.userId,
       title: title || file.name.replace(/\.[^/.]+$/, ''),
-      fileType: getFileType(file.name),
+      fileType,
       fileUrl,
       rawText: '',
       category,
-      status: 'processing', // will become 'embedded' after Day 6-7 extraction
+      status: 'processing',
       chunkCount: 0,
     });
+
+    try {
+      // 3. Extract text
+      const extractedText = await extractText(fileUrl, fileType);
+      
+      // 4. Chunk text
+      const chunks = chunkText(extractedText);
+      
+      // 5. Save chunks to MongoDB
+      if (chunks.length > 0) {
+        const chunkDocuments = chunks.map((c) => ({
+          documentId: newDoc._id,
+          userId: session.userId,
+          content: c.text,
+          embedding: [], // To be populated in Week 2
+          metadata: {
+            topic: category,
+            entities: [],
+            chunkIndex: c.index,
+          },
+        }));
+        
+        await Chunk.insertMany(chunkDocuments);
+      }
+
+      // 6. Update Document status
+      newDoc.rawText = extractedText;
+      newDoc.chunkCount = chunks.length;
+      newDoc.status = 'embedded'; // Ready for embedding or already processed
+      await newDoc.save();
+    } catch (processError) {
+      console.error('Processing failed for doc:', newDoc._id, processError);
+      newDoc.status = 'failed';
+      await newDoc.save();
+      return { error: 'File uploaded but extraction/chunking failed. See logs.' };
+    }
 
     revalidatePath('/documents');
     return { success: true };
