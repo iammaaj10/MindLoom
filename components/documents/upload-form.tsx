@@ -36,7 +36,6 @@ export default function UploadForm() {
     setDragActive(false);
     if (e.dataTransfer.files?.[0]) {
       setSelectedFile(e.dataTransfer.files[0]);
-      // Populate the hidden file input
       const dt = new DataTransfer();
       dt.items.add(e.dataTransfer.files[0]);
       if (fileInputRef.current) {
@@ -60,35 +59,39 @@ export default function UploadForm() {
   const getFileIcon = (file: File) => {
     if (file.type === 'application/pdf') {
       return (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-rose-500/10 border border-rose-500/20 text-rose-400">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+          </svg>
+        </div>
+      );
+    }
+    if (file.type.startsWith('image/')) {
+      return (
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+        </div>
+      );
+    }
+    return (
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
           <polyline points="14 2 14 8 20 8" />
           <line x1="16" y1="13" x2="8" y2="13" />
           <line x1="16" y1="17" x2="8" y2="17" />
         </svg>
-      );
-    }
-    if (file.type.startsWith('image/')) {
-      return (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-          <circle cx="8.5" cy="8.5" r="1.5" />
-          <polyline points="21 15 16 10 5 21" />
-        </svg>
-      );
-    }
-    return (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-        <polyline points="14 2 14 8 20 8" />
-        <line x1="16" y1="13" x2="8" y2="13" />
-        <line x1="16" y1="17" x2="8" y2="17" />
-        <line x1="10" y1="9" x2="8" y2="9" />
-      </svg>
+      </div>
     );
   };
 
-  // Reset form on success
   useEffect(() => {
     if (state?.success) {
       setSelectedFile(null);
@@ -98,31 +101,25 @@ export default function UploadForm() {
 
   return (
     <form ref={formRef} action={action} className="space-y-4">
-      {/* Error Message */}
+      {/* Notifications */}
       {state?.error && (
-        <div
-          className="p-3 rounded-lg text-xs font-medium"
-          style={{
-            background: 'rgba(255,68,102,0.1)',
-            border: '1px solid rgba(255,68,102,0.2)',
-            color: '#ff4466',
-          }}
-        >
-          {state.error}
+        <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-xs font-medium bg-rose-500/10 border border-rose-500/20 text-rose-400 animate-fade-up">
+          <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <span>{state.error}</span>
         </div>
       )}
 
-      {/* Success Message */}
       {state?.success && (
-        <div
-          className="p-3 rounded-lg text-xs font-medium"
-          style={{
-            background: 'rgba(34,197,94,0.1)',
-            border: '1px solid rgba(34,197,94,0.2)',
-            color: '#22c55e',
-          }}
-        >
-          Document uploaded successfully!
+        <div className="flex items-center justify-between px-4 py-3 rounded-xl text-xs font-medium bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 animate-fade-up shadow-[0_0_20px_rgba(16,185,129,0.15)]">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span>Document extracted and chunked successfully into MongoDB!</span>
+          </div>
+          <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-semibold">Indexed</span>
         </div>
       )}
 
@@ -133,18 +130,11 @@ export default function UploadForm() {
         onDragOver={handleDrag}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className="relative cursor-pointer rounded-xl p-8 text-center transition-all duration-300"
-        style={{
-          border: dragActive
-            ? '2px dashed #6366f1'
-            : '2px dashed var(--border)',
-          background: dragActive
-            ? 'rgba(99, 102, 241, 0.05)'
-            : 'rgba(255,255,255,0.01)',
-          boxShadow: dragActive
-            ? '0 0 30px rgba(99, 102, 241, 0.1)'
-            : 'none',
-        }}
+        className={`relative cursor-pointer rounded-2xl p-8 text-center transition-all duration-300 border border-dashed ${
+          dragActive
+            ? 'border-cyan-400 bg-cyan-500/[0.06] shadow-[0_0_40px_rgba(6,182,212,0.2)]'
+            : 'border-white/[0.12] bg-white/[0.015] hover:border-white/[0.25] hover:bg-white/[0.03]'
+        }`}
       >
         <input
           ref={fileInputRef}
@@ -156,20 +146,11 @@ export default function UploadForm() {
         />
 
         {selectedFile ? (
-          <div className="flex items-center justify-center gap-3">
-            <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center"
-              style={{ background: 'rgba(255,255,255,0.04)' }}
-            >
-              {getFileIcon(selectedFile)}
-            </div>
+          <div className="flex items-center justify-center gap-4 animate-fade-up">
+            {getFileIcon(selectedFile)}
             <div className="text-left">
-              <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                {selectedFile.name}
-              </p>
-              <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-                {formatSize(selectedFile.size)}
-              </p>
+              <p className="text-sm font-semibold text-zinc-100">{selectedFile.name}</p>
+              <p className="text-xs font-mono text-zinc-400">{formatSize(selectedFile.size)}</p>
             </div>
             <button
               type="button"
@@ -178,66 +159,61 @@ export default function UploadForm() {
                 setSelectedFile(null);
                 if (fileInputRef.current) fileInputRef.current.value = '';
               }}
-              className="ml-2 p-1 rounded hover:bg-zinc-800 transition-colors"
-              style={{ color: 'var(--text-tertiary)' }}
+              className="ml-2 p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
           </div>
         ) : (
-          <>
-            <div
-              className="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border)' }}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: 'var(--text-tertiary)' }}>
+          <div className="flex flex-col items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl mb-3 flex items-center justify-center bg-white/[0.04] border border-white/[0.08] text-zinc-400 group-hover:text-cyan-400 group-hover:border-cyan-500/30 transition-all shadow-inner">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="17 8 12 3 7 8" />
                 <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
             </div>
-            <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
-              Drop a file here or click to browse
+            <p className="text-sm font-semibold text-zinc-200 mb-1">
+              Drop file here, or <span className="text-cyan-400 underline underline-offset-4 decoration-cyan-400/40">browse from computer</span>
             </p>
-            <p className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-              PDF, TXT, MD, PNG, JPG, WebP — up to 10MB
+            <p className="text-xs text-zinc-500 font-mono">
+              PDF, TXT, MD, Images — Ingests and auto-chunks up to 10MB
             </p>
-          </>
+          </div>
         )}
       </div>
 
-      {/* Title + Category Row */}
+      {/* File Details Fields */}
       {selectedFile && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-up">
           <div>
-            <label htmlFor="doc-title" className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-              Title
+            <label htmlFor="doc-title" className="block text-xs font-semibold mb-1.5 text-zinc-400">
+              Document Label
             </label>
             <input
               id="doc-title"
               name="title"
               type="text"
               defaultValue={selectedFile.name.replace(/\.[^/.]+$/, '')}
-              placeholder="Document title"
-              className="input-field"
+              placeholder="e.g. System Design Notes"
+              className="w-full px-3.5 py-2 rounded-xl bg-zinc-900/90 border border-white/[0.1] text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-cyan-400 transition-colors"
             />
           </div>
           <div>
-            <label htmlFor="doc-category" className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
-              Category
+            <label htmlFor="doc-category" className="block text-xs font-semibold mb-1.5 text-zinc-400">
+              Knowledge Category
             </label>
             <select
               id="doc-category"
               name="category"
               defaultValue="general"
-              className="input-field"
-              style={{ appearance: 'none' }}
+              className="w-full px-3.5 py-2 rounded-xl bg-zinc-900/90 border border-white/[0.1] text-sm text-white focus:outline-none focus:border-cyan-400 transition-colors cursor-pointer"
             >
               {categories.map((cat) => (
-                <option key={cat} value={cat}>
+                <option key={cat} value={cat} className="bg-zinc-900 text-white">
                   {cat.charAt(0).toUpperCase() + cat.slice(1)}
                 </option>
               ))}
@@ -251,25 +227,25 @@ export default function UploadForm() {
         <button
           type="submit"
           disabled={pending}
-          className="btn-primary w-full py-2.5 animate-fade-up"
+          className="relative w-full py-2.5 rounded-xl font-semibold text-xs tracking-wide text-zinc-950 bg-gradient-to-r from-cyan-400 via-teal-300 to-indigo-300 hover:opacity-95 shadow-[0_0_25px_rgba(6,182,212,0.3)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 animate-fade-up"
         >
           {pending ? (
-            <span className="flex items-center gap-2">
-              <svg className="animate-spin h-3.5 w-3.5" viewBox="0 0 24 24" fill="none">
+            <>
+              <svg className="animate-spin h-3.5 w-3.5 text-zinc-950" viewBox="0 0 24 24" fill="none">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              Uploading...
-            </span>
+              <span>Extracting & Chunking Document...</span>
+            </>
           ) : (
-            <span className="flex items-center gap-2">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                 <polyline points="17 8 12 3 7 8" />
                 <line x1="12" y1="3" x2="12" y2="15" />
               </svg>
-              Upload document
-            </span>
+              <span>Process & Chunk into Vector Knowledge</span>
+            </>
           )}
         </button>
       )}

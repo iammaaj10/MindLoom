@@ -15,11 +15,11 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen flex noise" style={{ background: 'var(--bg-root)' }}>
+    <div className="min-h-screen flex bg-black text-white selection:bg-cyan-500/20 selection:text-cyan-200">
       <Sidebar />
-      <div className="flex-1 flex flex-col main-with-sidebar" style={{ marginLeft: '14rem' }}>
+      <div className="flex-1 flex flex-col min-w-0" style={{ marginLeft: '16rem' }}>
         <Topbar userName={session.name} />
-        <main className="flex-1 p-6 pt-20">{children}</main>
+        <main className="flex-1 p-8 pt-22 max-w-7xl w-full mx-auto">{children}</main>
       </div>
     </div>
   );
