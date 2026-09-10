@@ -164,7 +164,7 @@ export default async function DashboardPage() {
               Answered Locally
             </div>
             <div className="text-[11px] text-zinc-500 mt-1 font-mono">
-              Zero Gemini API cost ratio
+              Zero Cortex Ultra API cost ratio
             </div>
           </div>
         </div>
@@ -282,7 +282,7 @@ export default async function DashboardPage() {
               <span className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">→</span>
             </h3>
             <p className="text-xs text-zinc-500 mt-1">
-              Query your indexed chunks with local search & Gemini reasoning.
+              Query your indexed chunks with local search & Cortex Ultra reasoning.
             </p>
           </Link>
 

@@ -38,7 +38,7 @@ export default function Topbar({ userName }: { userName: string }) {
         {/* Architecture Pill */}
         <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] font-mono bg-white/[0.04] border border-white/[0.08] text-zinc-400">
           <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-          <span>Local Engine + Gemini Hybrid</span>
+          <span>Local Engine + Cortex Ultra Hybrid</span>
         </div>
 
         <div className="w-px h-4 bg-white/[0.08]" />

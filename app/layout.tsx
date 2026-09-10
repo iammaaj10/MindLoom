@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     default: 'Mindloom — Your Personal AI Companion',
   },
   description:
-    'A self-hosted, two-layer personal AI that learns from your data. Local ML for speed, Gemini for deep reasoning. Your data, your AI.',
+    'A self-hosted, two-layer personal AI that learns from your data. Local ML for speed, Cortex Ultra for deep reasoning. Your data, your AI.',
   keywords: ['AI', 'personal assistant', 'machine learning', 'productivity', 'study companion'],
 };
 
