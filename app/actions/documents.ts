@@ -7,7 +7,7 @@ import { getSession } from '@/lib/auth/session';
 import { saveFile, deleteFile, getFileType } from '@/lib/storage';
 import { extractText } from '@/lib/ingestion/extractor';
 import { chunkText } from '@/lib/ingestion/chunker';
-import { generateEmbeddings } from '@/lib/ml/client';
+import { generateEmbeddings, extractEntities } from '@/lib/ml/client';
 import { revalidatePath } from 'next/cache';
 
 // ─── Types ────────────────────────────────────────────
@@ -92,11 +92,15 @@ export async function uploadDocument(
       // 4. Chunk text
       const chunks = chunkText(extractedText);
       
-      // 4.5. Generate embeddings
+      // 4.5. Generate embeddings + extract entities in parallel
       const texts = chunks.map(c => c.text);
       let embeddings: number[][] = [];
+      let entities: string[][] = [];
       if (texts.length > 0) {
-        embeddings = await generateEmbeddings(texts);
+        [embeddings, entities] = await Promise.all([
+          generateEmbeddings(texts),
+          extractEntities(texts),
+        ]);
       }
 
       // 5. Save chunks to MongoDB
@@ -105,10 +109,10 @@ export async function uploadDocument(
           documentId: newDoc._id,
           userId: session.userId,
           content: c.text,
-          embedding: embeddings[index] || [], // Use the generated embedding or fallback
+          embedding: embeddings[index] || [],
           metadata: {
             topic: category,
-            entities: [],
+            entities: entities[index] || [],
             chunkIndex: c.index,
           },
         }));

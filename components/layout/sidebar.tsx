@@ -106,6 +106,26 @@ const navSections: NavSection[] = [
           </svg>
         ),
       },
+      {
+        label: 'Search',
+        href: '/search',
+        badge: 'new',
+        badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+        icon: (active) => (
+          <svg
+            className={`w-4 h-4 transition-colors ${active ? 'text-cyan-400' : 'text-zinc-400 group-hover:text-zinc-200'}`}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+        ),
+      },
     ],
   },
   {
