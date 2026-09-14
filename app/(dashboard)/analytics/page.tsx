@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import dbConnect from '@/lib/db/connection';
 import Log from '@/lib/db/models/log';
 import DocumentModel from '@/lib/db/models/document';
+import ChatMessage from '@/lib/db/models/chat-history';
 import AnalyticsCharts from './charts';
 
 export const metadata = {
@@ -57,6 +58,15 @@ export default async function AnalyticsPage() {
     .map(([date, count]) => ({ date, count }))
     .sort((a, b) => a.date.localeCompare(b.date));
 
+  // Aggregate local vs gemini queries
+  const localQueries = await ChatMessage.countDocuments({ userId: session.userId, source: 'local', role: 'user' });
+  const geminiQueries = await ChatMessage.countDocuments({ userId: session.userId, source: 'gemini', role: 'user' });
+
+  const queryData = [
+    { name: 'Local AI (Free)', value: localQueries },
+    { name: 'Gemini (Cloud)', value: geminiQueries }
+  ];
+
   return (
     <div className="space-y-8 animate-fade-up">
       {/* ─── Header ─── */}
@@ -74,6 +84,7 @@ export default async function AnalyticsPage() {
         topicData={topicData} 
         categoryData={categoryData} 
         activityData={activityData} 
+        queryData={queryData}
       />
     </div>
   );

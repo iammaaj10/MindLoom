@@ -5,11 +5,45 @@ import { jwtVerify } from 'jose';
 const secretKey = process.env.SESSION_SECRET;
 const encodedKey = new TextEncoder().encode(secretKey);
 
+// Basic in-memory store for rate limiting
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 30; // Max 30 API calls per minute per IP
+
 // Routes that don't require authentication
 const publicRoutes = ['/', '/login', '/signup'];
 
 export default async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
+
+  // Rate Limiting for /api routes
+  if (path.startsWith('/api')) {
+    const ip = request.headers.get('x-real-ip') || 
+               request.headers.get('x-forwarded-for') || 
+               'anonymous';
+
+    const now = Date.now();
+    let record = rateLimitStore.get(ip);
+
+    if (!record || record.resetTime < now) {
+      record = { count: 1, resetTime: now + RATE_LIMIT_WINDOW };
+      rateLimitStore.set(ip, record);
+    } else {
+      record.count++;
+      if (record.count > MAX_REQUESTS_PER_WINDOW) {
+        return new NextResponse(
+          JSON.stringify({ error: 'Too Many Requests' }),
+          { 
+            status: 429, 
+            headers: { 
+              'Content-Type': 'application/json',
+              'Retry-After': Math.ceil((record.resetTime - now) / 1000).toString()
+            } 
+          }
+        );
+      }
+    }
+  }
 
   // Allow public routes
   const isPublicRoute = publicRoutes.some(
@@ -17,14 +51,18 @@ export default async function proxy(request: NextRequest) {
   );
 
   if (isPublicRoute) {
-    return NextResponse.next();
+    const res = NextResponse.next();
+    applySecurityHeaders(res);
+    return res;
   }
 
   // Check for session cookie
   const session = request.cookies.get('session')?.value;
 
   if (!session) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    const res = NextResponse.redirect(new URL('/login', request.url));
+    applySecurityHeaders(res);
+    return res;
   }
 
   // Verify the JWT
@@ -50,11 +88,23 @@ export default async function proxy(request: NextRequest) {
       path: '/',
     });
 
+    applySecurityHeaders(response);
     return response;
   } catch {
     // Invalid token — redirect to login
-    return NextResponse.redirect(new URL('/login', request.url));
+    const res = NextResponse.redirect(new URL('/login', request.url));
+    applySecurityHeaders(res);
+    return res;
   }
+}
+
+function applySecurityHeaders(res: NextResponse) {
+  res.headers.set('X-DNS-Prefetch-Control', 'on');
+  res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  res.headers.set('X-XSS-Protection', '1; mode=block');
+  res.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  res.headers.set('X-Content-Type-Options', 'nosniff');
+  res.headers.set('Referrer-Policy', 'origin-when-cross-origin');
 }
 
 export const config = {
