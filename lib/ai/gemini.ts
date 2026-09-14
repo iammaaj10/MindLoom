@@ -1,14 +1,26 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import dbConnect from '@/lib/db/connection';
+import User from '@/lib/db/models/user';
 
-// ─── Singleton Client ─────────────────────────────────
-
-const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) {
-  console.warn('[Gemini] GEMINI_API_KEY is not set — Gemini calls will fail');
-}
-
-const genAI = new GoogleGenerativeAI(apiKey || '');
 const MODEL = 'gemini-1.5-flash';
+
+async function getGenAI(userId?: string) {
+  let apiKey = process.env.GEMINI_API_KEY;
+
+  if (userId) {
+    await dbConnect();
+    const user = await User.findById(userId).select('geminiApiKey').lean();
+    if (user && user.geminiApiKey) {
+      apiKey = user.geminiApiKey;
+    }
+  }
+
+  if (!apiKey) {
+    console.warn('[Gemini] GEMINI_API_KEY is not set — Gemini calls will fail');
+  }
+
+  return new GoogleGenerativeAI(apiKey || '');
+}
 
 // ─── Types ────────────────────────────────────────────
 
@@ -23,9 +35,11 @@ export interface GeminiResponse {
 export async function generateWithGemini(
   systemPrompt: string,
   userMessage: string,
+  userId?: string,
   maxRetries: number = 3
 ): Promise<GeminiResponse> {
   const start = Date.now();
+  const genAI = await getGenAI(userId);
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
@@ -76,9 +90,11 @@ export async function generateWithGemini(
 
 export async function* streamWithGemini(
   systemPrompt: string,
-  userMessage: string
+  userMessage: string,
+  userId?: string
 ): AsyncGenerator<string, void, unknown> {
   try {
+    const genAI = await getGenAI(userId);
     const model = genAI.getGenerativeModel({
       model: MODEL,
       systemInstruction: systemPrompt,

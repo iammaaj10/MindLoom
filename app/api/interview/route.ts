@@ -51,7 +51,7 @@ ${promptBlock}`;
       async start(controller) {
         try {
           // Stream Gemini response
-          for await (const chunk of streamWithGemini(interviewerPrompt, message)) {
+          for await (const chunk of streamWithGemini(interviewerPrompt, message, session.userId)) {
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ type: 'text', text: chunk })}\n\n`)
             );

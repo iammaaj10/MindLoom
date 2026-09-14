@@ -4,6 +4,8 @@ export interface IUser extends MongoDoc {
   name: string;
   email: string;
   passwordHash: string;
+  displayName?: string;
+  geminiApiKey?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,7 +28,15 @@ const UserSchema = new Schema<IUser>(
     },
     passwordHash: {
       type: String,
-      required: [true, 'Password is required'],
+      required: [true, 'Please provide a password hash'],
+    },
+    displayName: {
+      type: String,
+      trim: true,
+    },
+    geminiApiKey: {
+      type: String, // In a real prod app, you would encrypt this!
+      trim: true,
     },
   },
   {

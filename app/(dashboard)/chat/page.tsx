@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { getChatSessions, getChatMessages, deleteChatSession } from '@/app/actions/chat';
 
 type Message = {
   id: string;
@@ -10,7 +11,15 @@ type Message = {
   isStreaming?: boolean;
 };
 
+type Session = {
+  _id: string;
+  title: string;
+  updatedAt: string;
+};
+
 export default function ChatPage() {
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -23,6 +32,45 @@ export default function ChatPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Load sessions on mount
+  useEffect(() => {
+    loadSessions();
+  }, []);
+
+  const loadSessions = async () => {
+    const res = await getChatSessions();
+    if (res.success) {
+      setSessions(res.sessions);
+    }
+  };
+
+  const handleSelectSession = async (sessionId: string) => {
+    setActiveSessionId(sessionId);
+    setMessages([]); // Clear current
+    const res = await getChatMessages(sessionId);
+    if (res.success) {
+      const mapped = res.messages.map((m: any) => ({
+        id: m._id,
+        role: m.role,
+        content: m.content,
+        source: m.source,
+      }));
+      setMessages(mapped);
+    }
+  };
+
+  const handleNewChat = () => {
+    setActiveSessionId(null);
+    setMessages([]);
+  };
+
+  const handleDeleteSession = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    await deleteChatSession(id);
+    if (activeSessionId === id) handleNewChat();
+    loadSessions();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +96,10 @@ export default function ChatPage() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage.content }),
+        body: JSON.stringify({ 
+          message: userMessage.content,
+          sessionId: activeSessionId || 'default'
+        }),
       });
 
       if (!res.ok) throw new Error('Network response was not ok');
@@ -65,6 +116,10 @@ export default function ChatPage() {
               : m
           )
         );
+        if (data.sessionId && activeSessionId !== data.sessionId) {
+          setActiveSessionId(data.sessionId);
+          loadSessions();
+        }
         setIsLoading(false);
         return;
       }
@@ -95,6 +150,10 @@ export default function ChatPage() {
                     m.id === assistantId ? { ...m, source: data.source } : m
                   )
                 );
+                if (data.sessionId && activeSessionId !== data.sessionId) {
+                  setActiveSessionId(data.sessionId);
+                  loadSessions();
+                }
               } else if (data.type === 'text') {
                 setMessages((prev) =>
                   prev.map((m) =>
@@ -134,16 +193,49 @@ export default function ChatPage() {
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       {/* ─── Header ─── */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">AI Companion</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-white">AI Companion</h1>
         <p className="text-sm text-zinc-400 mt-1">
           Dual-layer hybrid RAG chat. Queries are routed locally or to Gemini automatically.
         </p>
       </div>
 
-      {/* ─── Chat Window ─── */}
-      <div className="flex-1 flex flex-col bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] rounded-2xl overflow-hidden shadow-[0_4px_25px_rgba(0,0,0,0.4)]">
+      <div className="flex-1 flex gap-6 min-h-0">
         
-        {/* Messages Area */}
+        {/* ─── Sidebar (History) ─── */}
+        <div className="w-64 flex flex-col gap-4">
+          <button 
+            onClick={handleNewChat}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20 transition-colors text-sm font-semibold"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            New Chat
+          </button>
+
+          <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+            {sessions.map(s => (
+              <div 
+                key={s._id}
+                onClick={() => handleSelectSession(s._id)}
+                className={`group flex items-center justify-between p-3 rounded-xl border transition-colors cursor-pointer ${activeSessionId === s._id ? 'bg-white/[0.08] border-white/[0.15]' : 'bg-transparent border-transparent hover:bg-white/[0.04]'}`}
+              >
+                <div className="truncate text-sm text-zinc-300 font-medium">
+                  {s.title}
+                </div>
+                <button 
+                  onClick={(e) => handleDeleteSession(e, s._id)}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-rose-400 transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ─── Chat Window ─── */}
+        <div className="flex-1 flex flex-col bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] rounded-2xl overflow-hidden shadow-[0_4px_25px_rgba(0,0,0,0.4)] relative">
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center opacity-60">
@@ -228,6 +320,7 @@ export default function ChatPage() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }

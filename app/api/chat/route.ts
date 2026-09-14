@@ -6,6 +6,7 @@ import { searchChunks } from '@/lib/ml/retrieval';
 import { buildContext, contextToPromptBlock } from '@/lib/ml/context';
 import dbConnect from '@/lib/db/connection';
 import ChatMessage from '@/lib/db/models/chat-history';
+import ChatSession from '@/lib/db/models/chat-session';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -29,12 +30,23 @@ export async function POST(request: NextRequest) {
   }
 
   const startTime = Date.now();
+  await dbConnect();
+
+  let activeSessionId = sessionId;
+  
+  // If no sessionId is provided or it's 'default', create a new session
+  if (!activeSessionId || activeSessionId === 'default') {
+    const newSession = await ChatSession.create({
+      userId: session.userId,
+      title: message.substring(0, 40) + (message.length > 40 ? '...' : ''),
+    });
+    activeSessionId = newSession._id.toString();
+  }
 
   // 1. Save user message to DB
-  await dbConnect();
   await ChatMessage.create({
     userId: session.userId,
-    sessionId: sessionId || 'default',
+    sessionId: activeSessionId,
     role: 'user',
     content: message,
     source: 'local',
@@ -52,7 +64,7 @@ export async function POST(request: NextRequest) {
     // Save assistant response
     await ChatMessage.create({
       userId: session.userId,
-      sessionId: sessionId || 'default',
+      sessionId: activeSessionId,
       role: 'assistant',
       content: decision.localAnswer,
       source: 'local',
@@ -67,6 +79,7 @@ export async function POST(request: NextRequest) {
         source: 'local',
         latencyMs,
         tokensUsed: 0,
+        sessionId: activeSessionId,
       }),
       {
         headers: { 'Content-Type': 'application/json' },
@@ -89,15 +102,15 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // Send source metadata first
+          // Send source metadata first, including activeSessionId
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ type: 'meta', source: 'gemini', chunksUsed: searchResults.length })}\n\n`
+              `data: ${JSON.stringify({ type: 'meta', source: 'gemini', chunksUsed: searchResults.length, sessionId: activeSessionId })}\n\n`
             )
           );
 
           // Stream Gemini response
-          for await (const chunk of streamWithGemini(systemPrompt, message)) {
+          for await (const chunk of streamWithGemini(systemPrompt, message, session.userId)) {
             fullText += chunk;
             controller.enqueue(
               encoder.encode(
@@ -118,7 +131,7 @@ export async function POST(request: NextRequest) {
           // Save the full response to DB (fire-and-forget)
           ChatMessage.create({
             userId: session.userId,
-            sessionId: sessionId || 'default',
+            sessionId: activeSessionId,
             role: 'assistant',
             content: fullText,
             source: 'gemini',
@@ -162,7 +175,7 @@ export async function POST(request: NextRequest) {
 
       await ChatMessage.create({
         userId: session.userId,
-        sessionId: sessionId || 'default',
+        sessionId: activeSessionId,
         role: 'assistant',
         content: fallbackAnswer,
         source: 'local',
@@ -177,6 +190,7 @@ export async function POST(request: NextRequest) {
           latencyMs: Date.now() - startTime,
           tokensUsed: 0,
           fallback: true,
+          sessionId: activeSessionId,
         }),
         { headers: { 'Content-Type': 'application/json' } }
       );

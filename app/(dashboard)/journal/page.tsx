@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import dbConnect from '@/lib/db/connection';
 import Log from '@/lib/db/models/log';
 import JournalForm from './journal-form';
+import JournalItem from './journal-item';
 
 export const metadata = {
   title: 'Daily Journal — Mindloom',
@@ -64,36 +65,7 @@ export default async function JournalPage() {
           ) : (
             <div className="space-y-4">
               {logs.map((log: any) => (
-                <div key={log._id.toString()} className="card p-5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-zinc-400">
-                      {new Date(log.createdAt).toLocaleDateString(undefined, {
-                        weekday: 'short',
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      Indexed
-                    </span>
-                  </div>
-                  
-                  <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
-                    {log.content}
-                  </p>
-                  
-                  {log.extractedTopics && log.extractedTopics.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-2 border-t border-white/[0.05]">
-                      {log.extractedTopics.map((topic: string, i: number) => (
-                        <span key={i} className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
-                          {topic}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <JournalItem key={log._id.toString()} log={log} />
               ))}
             </div>
           )}

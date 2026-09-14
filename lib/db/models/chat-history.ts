@@ -4,7 +4,7 @@ export type MessageSource = 'local' | 'gemini' | 'hybrid';
 
 export interface IChatMessage extends MongoDoc {
   userId: mongoose.Types.ObjectId;
-  sessionId: string;
+  sessionId?: mongoose.Types.ObjectId; // Optional for backward compatibility
   role: 'user' | 'assistant';
   content: string;
   source: MessageSource;
@@ -22,8 +22,8 @@ const ChatMessageSchema = new Schema<IChatMessage>(
       index: true,
     },
     sessionId: {
-      type: String,
-      required: true,
+      type: Schema.Types.ObjectId,
+      ref: 'ChatSession',
       index: true,
     },
     role: {
