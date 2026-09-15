@@ -24,6 +24,7 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isSubmittingRef = useRef(false); // Fix A2: Guard against double-submit
   
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -74,8 +75,9 @@ export default function ChatPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || isSubmittingRef.current) return;
 
+    isSubmittingRef.current = true;
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -186,6 +188,7 @@ export default function ChatPage() {
       );
     } finally {
       setIsLoading(false);
+      isSubmittingRef.current = false;
     }
   };
 

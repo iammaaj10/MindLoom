@@ -49,6 +49,7 @@ const LogSchema = new Schema<ILog>(
 
 // Compound index for per-user date queries
 LogSchema.index({ userId: 1, date: -1 });
+LogSchema.index({ userId: 1, createdAt: -1 });
 
 const Log: Model<ILog> =
   mongoose.models.Log || mongoose.model<ILog>('Log', LogSchema);

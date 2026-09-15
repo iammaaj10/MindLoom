@@ -9,6 +9,7 @@ import { extractText } from '@/lib/ingestion/extractor';
 import { chunkText } from '@/lib/ingestion/chunker';
 import { generateEmbeddings, extractEntities } from '@/lib/ml/client';
 import { revalidatePath } from 'next/cache';
+import { cache } from 'react';
 
 // ─── Types ────────────────────────────────────────────
 
@@ -142,7 +143,8 @@ export async function uploadDocument(
 
 // ─── Fetch ────────────────────────────────────────────
 
-export async function getDocuments(): Promise<DocumentResult[]> {
+// Fix A4: Cache the results per-request to avoid redundant DB calls on server rendering
+export const getDocuments = cache(async (): Promise<DocumentResult[]> => {
   const session = await getSession();
   if (!session) return [];
 
@@ -162,7 +164,7 @@ export async function getDocuments(): Promise<DocumentResult[]> {
     chunkCount: doc.chunkCount,
     createdAt: doc.createdAt.toISOString(),
   }));
-}
+});
 
 // ─── Delete ───────────────────────────────────────────
 

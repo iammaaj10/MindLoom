@@ -63,3 +63,41 @@ export async function embedQuery(text: string): Promise<number[]> {
   const results = await generateEmbeddings([text]);
   return results[0] || [];
 }
+
+// ─── Vector Similarity ────────────────────────────────
+
+export async function calculateSimilarity(
+  queryEmbedding: number[],
+  candidateEmbeddings: number[][],
+  topK: number = 5
+): Promise<{ scores: number[]; rankedIndices: number[] }> {
+  if (candidateEmbeddings.length === 0) {
+    return { scores: [], rankedIndices: [] };
+  }
+
+  try {
+    const res = await fetch(`${ML_SERVICE_URL}/similarity`, {
+      method: 'POST',
+      headers: ML_HEADERS,
+      body: JSON.stringify({
+        query_embedding: queryEmbedding,
+        candidate_embeddings: candidateEmbeddings,
+        top_k: topK,
+      }),
+    });
+
+    if (!res.ok) {
+      console.error(`Similarity Error: ${res.status} ${res.statusText}`);
+      return { scores: [], rankedIndices: [] };
+    }
+
+    const data = await res.json();
+    return {
+      scores: data.scores,
+      rankedIndices: data.ranked_indices,
+    };
+  } catch (error) {
+    console.error('Failed to calculate similarity:', error);
+    return { scores: [], rankedIndices: [] };
+  }
+}

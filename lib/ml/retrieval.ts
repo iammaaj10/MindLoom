@@ -1,6 +1,6 @@
 import dbConnect from '@/lib/db/connection';
 import Chunk, { IChunk } from '@/lib/db/models/chunk';
-import { embedQuery } from '@/lib/ml/client';
+import { embedQuery, calculateSimilarity } from '@/lib/ml/client';
 import mongoose from 'mongoose';
 
 // ─── Types ────────────────────────────────────────────
@@ -124,38 +124,27 @@ async function inMemorySearch(
   console.log(`[Search] In-memory: found ${chunks.length} chunks with embeddings for user ${userId}`);
   if (chunks.length === 0) return [];
 
-  // Compute cosine similarity in JS
-  const scored = chunks.map((chunk: any) => {
-    const score = cosineSimilarity(queryEmbedding, chunk.embedding);
+  // Fix A5: Offload cosine similarity math to the Python ML service
+  const candidateEmbeddings = chunks.map(c => c.embedding);
+  
+  const { scores, rankedIndices } = await calculateSimilarity(
+    queryEmbedding,
+    candidateEmbeddings,
+    limit
+  );
+
+  return rankedIndices.map((index, i) => {
+    const chunk = chunks[index];
     return {
       _id: chunk._id.toString(),
       content: chunk.content,
-      score,
+      score: scores[index],
       documentId: chunk.documentId.toString(),
       metadata: chunk.metadata,
     };
   });
-
-  // Sort by score descending and take top-k
-  scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, limit);
 }
 
 // ─── Math Utilities ───────────────────────────────────
 
-function cosineSimilarity(a: number[], b: number[]): number {
-  if (a.length !== b.length || a.length === 0) return 0;
-
-  let dot = 0;
-  let normA = 0;
-  let normB = 0;
-
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-
-  const denom = Math.sqrt(normA) * Math.sqrt(normB);
-  return denom === 0 ? 0 : dot / denom;
-}
+// Replaced by Python ML Service (Task A5)

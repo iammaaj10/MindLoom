@@ -24,7 +24,8 @@ const ChatMessageSchema = new Schema<IChatMessage>(
     sessionId: {
       type: Schema.Types.ObjectId,
       ref: 'ChatSession',
-      index: true,
+      required: true,
+      index: true, // Fix A1: Index for faster session message lookups
     },
     role: {
       type: String,
