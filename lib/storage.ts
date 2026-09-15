@@ -59,7 +59,15 @@ export async function saveFile(
 export async function deleteFile(fileUrl: string): Promise<void> {
   if (!fileUrl) return;
 
-  const filePath = path.join(process.cwd(), 'public', fileUrl);
+  // Resolve to absolute and validate it stays inside UPLOAD_DIR
+  const filePath = path.resolve(process.cwd(), 'public', fileUrl);
+  const safeBase = path.resolve(UPLOAD_DIR);
+
+  if (!filePath.startsWith(safeBase)) {
+    console.error(`[Storage] Path traversal attempt blocked: ${fileUrl}`);
+    return; // Silently reject — don't throw to avoid leaking info
+  }
+
   try {
     if (existsSync(filePath)) {
       await unlink(filePath);

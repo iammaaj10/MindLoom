@@ -14,6 +14,7 @@ export async function getChatSessions() {
     await dbConnect();
     const sessions = await ChatSession.find({ userId: session.userId })
       .sort({ updatedAt: -1 })
+      .limit(50) // Fix #10: Prevent unbounded queries
       .lean();
 
     return { success: true, sessions: JSON.parse(JSON.stringify(sessions)) };
@@ -34,6 +35,7 @@ export async function getChatMessages(sessionId: string) {
       sessionId
     })
       .sort({ createdAt: 1 })
+      .limit(200) // Fix #10: Cap messages per session
       .lean();
 
     return { success: true, messages: JSON.parse(JSON.stringify(messages)) };

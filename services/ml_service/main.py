@@ -1,9 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import time
 import re
+import os
 import numpy as np
 import torch
 from sentence_transformers import SentenceTransformer
@@ -49,6 +51,23 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Fix #6: API key authentication
+ML_API_KEY = os.getenv("ML_SERVICE_API_KEY", "mindloom-dev-secret")
+
+@app.middleware("http")
+async def verify_api_key(request: Request, call_next):
+    # Allow health check without auth
+    if request.url.path == "/health" or request.method == "OPTIONS":
+        return await call_next(request)
+    
+    api_key = request.headers.get("x-api-key")
+    if api_key != ML_API_KEY:
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Unauthorized: Invalid or missing API key"}
+        )
+    return await call_next(request)
 
 # ─── Request / Response Models ─────────────────────────
 

@@ -5,16 +5,68 @@ import { jwtVerify } from 'jose';
 const secretKey = process.env.SESSION_SECRET;
 const encodedKey = new TextEncoder().encode(secretKey);
 
-// Basic in-memory store for rate limiting
+// ─── Fix #5: Rate Limiting with Cleanup ──────────────
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 30; // Max 30 API calls per minute per IP
+const MAX_REQUESTS_PER_WINDOW = 30;
+const MAX_STORE_SIZE = 10000; // Cap the map to prevent memory leaks
+
+// Periodic cleanup of expired entries
+function cleanupRateLimitStore() {
+  const now = Date.now();
+  for (const [key, val] of rateLimitStore.entries()) {
+    if (val.resetTime < now) {
+      rateLimitStore.delete(key);
+    }
+  }
+}
+
+// Run cleanup every 60 seconds
+if (typeof globalThis !== 'undefined') {
+  // Avoid setting multiple intervals in dev mode (hot reload)
+  const globalObj = globalThis as any;
+  if (!globalObj.__rateLimitCleanup) {
+    globalObj.__rateLimitCleanup = setInterval(cleanupRateLimitStore, 60_000);
+  }
+}
 
 // Routes that don't require authentication
 const publicRoutes = ['/', '/login', '/signup'];
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 export default async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
+
+  // ─── Fix #4: CSRF Protection for API routes ───────
+  if (path.startsWith('/api') && request.method === 'POST') {
+    const origin = request.headers.get('origin');
+    const referer = request.headers.get('referer');
+    const appOrigin = new URL(APP_URL).origin;
+
+    // Allow requests with no origin header (same-origin browser requests, curl, etc.)
+    // But block requests from a different origin (cross-site attack)
+    if (origin && origin !== appOrigin) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Forbidden: Cross-origin request blocked' }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Also check referer as a secondary defense
+    if (!origin && referer) {
+      try {
+        const refererOrigin = new URL(referer).origin;
+        if (refererOrigin !== appOrigin) {
+          return new NextResponse(
+            JSON.stringify({ error: 'Forbidden' }),
+            { status: 403, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch {
+        // Malformed referer — allow through (could be a non-browser client)
+      }
+    }
+  }
 
   // Rate Limiting for /api routes
   if (path.startsWith('/api')) {
@@ -27,6 +79,10 @@ export default async function proxy(request: NextRequest) {
 
     if (!record || record.resetTime < now) {
       record = { count: 1, resetTime: now + RATE_LIMIT_WINDOW };
+      // Safety: don't let the map grow unbounded
+      if (rateLimitStore.size >= MAX_STORE_SIZE) {
+        cleanupRateLimitStore();
+      }
       rateLimitStore.set(ip, record);
     } else {
       record.count++;
@@ -105,6 +161,19 @@ function applySecurityHeaders(res: NextResponse) {
   res.headers.set('X-Frame-Options', 'SAMEORIGIN');
   res.headers.set('X-Content-Type-Options', 'nosniff');
   res.headers.set('Referrer-Policy', 'origin-when-cross-origin');
+
+  // Fix #9: Content-Security-Policy
+  res.headers.set('Content-Security-Policy', [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",  // Required for Next.js
+    "style-src 'self' 'unsafe-inline'",                  // Required for Tailwind
+    "img-src 'self' data: blob:",
+    "font-src 'self' https://fonts.gstatic.com",
+    "connect-src 'self' https://generativelanguage.googleapis.com",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join('; '));
 }
 
 export const config = {

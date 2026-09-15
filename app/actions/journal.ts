@@ -6,6 +6,14 @@ import Log from '@/lib/db/models/log';
 import { extractEntities } from '@/lib/ml/client';
 import { revalidatePath } from 'next/cache';
 
+// Fix #8: Strip control characters and enforce length limits
+function sanitizeContent(input: string, maxLength = 5000): string {
+  return input
+    .trim()
+    .slice(0, maxLength)
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ''); // strip control chars except \n, \r, \t
+}
+
 export async function createJournalEntry(content: string) {
   const session = await getSession();
   if (!session) {
@@ -16,12 +24,17 @@ export async function createJournalEntry(content: string) {
     return { error: 'Content is required' };
   }
 
+  const sanitized = sanitizeContent(content);
+  if (!sanitized) {
+    return { error: 'Content is required' };
+  }
+
   try {
     await dbConnect();
 
     // Send the journal content to our local ML service to extract entities/topics
     // We use the same extractEntities endpoint that we use for documents!
-    const entitiesList = await extractEntities([content]);
+    const entitiesList = await extractEntities([sanitized]);
     const extractedEntities = entitiesList[0] || [];
 
     // Filter out only topics (TECH) and organizations/people (ENTITY) from the extracted data
@@ -31,7 +44,7 @@ export async function createJournalEntry(content: string) {
 
     const newLog = await Log.create({
       userId: session.userId,
-      content,
+      content: sanitized,
       tags: [],
       extractedTopics: topics,
       extractedTimeSpent: [], // Could be expanded later with regex parsing for time
@@ -68,18 +81,19 @@ export async function updateJournalLog(id: string, content: string) {
   const session = await getSession();
   if (!session) return { error: 'Unauthorized' };
   if (!content.trim()) return { error: 'Content cannot be empty' };
+  const sanitized = sanitizeContent(content);
 
   try {
     await dbConnect();
     
     // Re-extract entities from ML Service
-    const extractedTopics = await extractEntities([content]);
+    const extractedTopics = await extractEntities([sanitized]);
 
     await Log.updateOne(
       { _id: id, userId: session.userId },
       { 
         $set: { 
-          content,
+          content: sanitized,
           extractedTopics: extractedTopics[0] || [],
           updatedAt: new Date()
         } 

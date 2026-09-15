@@ -110,12 +110,15 @@ async function inMemorySearch(
   queryEmbedding: number[],
   limit: number
 ): Promise<SearchResult[]> {
-  // Fetch all chunks for this user that have non-empty embeddings
+  // Fetch recent chunks for this user that have non-empty embeddings
+  // Fix #11: Limit to recent 500 chunks to prevent memory explosion
   const chunks = await Chunk.find({
     userId: new mongoose.Types.ObjectId(userId),
     embedding: { $ne: [] },
   })
     .select('content embedding documentId metadata')
+    .sort({ createdAt: -1 })
+    .limit(500)
     .lean();
 
   console.log(`[Search] In-memory: found ${chunks.length} chunks with embeddings for user ${userId}`);

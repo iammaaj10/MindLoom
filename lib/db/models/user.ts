@@ -5,7 +5,8 @@ export interface IUser extends MongoDoc {
   email: string;
   passwordHash: string;
   displayName?: string;
-  geminiApiKey?: string;
+  geminiApiKey?: string;       // encrypted ciphertext
+  geminiApiKeyIv?: string;     // AES-GCM initialization vector
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,7 +36,11 @@ const UserSchema = new Schema<IUser>(
       trim: true,
     },
     geminiApiKey: {
-      type: String, // In a real prod app, you would encrypt this!
+      type: String, // AES-256-GCM encrypted ciphertext
+      trim: true,
+    },
+    geminiApiKeyIv: {
+      type: String, // Initialization vector for decryption
       trim: true,
     },
   },

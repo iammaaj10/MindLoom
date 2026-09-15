@@ -7,9 +7,16 @@ import { buildContext, contextToPromptBlock } from '@/lib/ml/context';
 import dbConnect from '@/lib/db/connection';
 import ChatMessage from '@/lib/db/models/chat-history';
 import ChatSession from '@/lib/db/models/chat-session';
+import { z } from 'zod';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+// Fix #3: Validate all incoming payloads
+const ChatInputSchema = z.object({
+  message: z.string().min(1, 'Message is required').max(10000, 'Message too long'),
+  sessionId: z.string().max(100).optional(),
+});
 
 export async function POST(request: NextRequest) {
   const session = await getSession();
@@ -20,14 +27,25 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const { message, sessionId } = await request.json();
-
-  if (!message?.trim()) {
-    return new Response(JSON.stringify({ error: 'Message is required' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
+  // Validate input
+  let body: z.infer<typeof ChatInputSchema>;
+  try {
+    const raw = await request.json();
+    const parsed = ChatInputSchema.safeParse(raw);
+    if (!parsed.success) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid input', details: parsed.error.flatten().fieldErrors }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    body = parsed.data;
+  } catch {
+    return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
+      status: 400, headers: { 'Content-Type': 'application/json' },
     });
   }
+
+  const { message, sessionId } = body;
 
   const startTime = Date.now();
   await dbConnect();

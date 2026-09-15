@@ -3,9 +3,20 @@ import { getSession } from '@/lib/auth/session';
 import { streamWithGemini, buildSystemPrompt } from '@/lib/ai/gemini';
 import { searchChunks } from '@/lib/ml/retrieval';
 import { buildContext, contextToPromptBlock } from '@/lib/ml/context';
+import { z } from 'zod';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+// Fix #3: Validate interview input
+const InterviewInputSchema = z.object({
+  message: z.string().min(1).max(10000),
+  topic: z.string().min(1, 'Topic is required').max(500),
+  history: z.array(z.object({
+    role: z.string(),
+    content: z.string().max(10000),
+  })).max(50).optional(),
+});
 
 export async function POST(request: NextRequest) {
   const session = await getSession();
@@ -13,11 +24,23 @@ export async function POST(request: NextRequest) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 
-  const { message, topic, history } = await request.json();
-
-  if (!topic) {
-    return new Response(JSON.stringify({ error: 'Topic is required' }), { status: 400 });
+  // Validate input
+  let body: z.infer<typeof InterviewInputSchema>;
+  try {
+    const raw = await request.json();
+    const parsed = InterviewInputSchema.safeParse(raw);
+    if (!parsed.success) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid input', details: parsed.error.flatten().fieldErrors }),
+        { status: 400 }
+      );
+    }
+    body = parsed.data;
+  } catch {
+    return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400 });
   }
+
+  const { message, topic, history } = body;
 
   // 1. Gather context about this specific topic from the user's local documents
   const searchResults = await searchChunks(session.userId, topic, 5);

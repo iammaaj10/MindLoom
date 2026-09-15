@@ -9,7 +9,10 @@ import Log from '@/lib/db/models/log';
 import ChatMessage from '@/lib/db/models/chat-history';
 import ChatSession from '@/lib/db/models/chat-session';
 import StudyItem from '@/lib/db/models/study-plan';
+import { encryptValue } from '@/lib/crypto';
 import { revalidatePath } from 'next/cache';
+import { rm } from 'fs/promises';
+import path from 'path';
 
 export async function getUserSettings() {
   const session = await getSession();
@@ -38,11 +41,28 @@ export async function updateProfile(displayName: string, apiKey: string) {
   const session = await getSession();
   if (!session) return { error: 'Unauthorized' };
 
+  // Input validation
+  if (displayName && displayName.length > 100) {
+    return { error: 'Display name is too long (max 100 characters)' };
+  }
+  if (apiKey && (apiKey.length < 10 || apiKey.length > 200)) {
+    return { error: 'API key looks invalid' };
+  }
+
   try {
     await dbConnect();
-    const updates: any = {};
-    if (displayName !== undefined) updates.displayName = displayName;
-    if (apiKey !== undefined) updates.geminiApiKey = apiKey;
+    const updates: Record<string, unknown> = {};
+
+    if (displayName !== undefined) {
+      updates.displayName = displayName.trim().slice(0, 100);
+    }
+
+    // Fix #1: Encrypt the API key before storing
+    if (apiKey) {
+      const { encrypted, iv } = encryptValue(apiKey);
+      updates.geminiApiKey = encrypted;
+      updates.geminiApiKeyIv = iv;
+    }
 
     await User.updateOne({ _id: session.userId }, { $set: updates });
     revalidatePath('/settings');
@@ -70,8 +90,15 @@ export async function wipeUserData() {
       StudyItem.deleteMany({ userId: session.userId }),
     ]);
 
-    // Note: In a real app we should also delete files from S3/GridFS here.
-    
+    // Fix #7: Delete uploaded files from disk
+    try {
+      const userUploadDir = path.join(process.cwd(), 'public', 'uploads', session.userId);
+      await rm(userUploadDir, { recursive: true, force: true });
+    } catch (fileErr) {
+      // Directory may not exist — that's OK
+      console.warn('Upload directory cleanup:', fileErr);
+    }
+
     revalidatePath('/');
     return { success: true };
   } catch (error) {

@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dbConnect from '@/lib/db/connection';
 import User from '@/lib/db/models/user';
+import { decryptValue } from '@/lib/crypto';
 
 const MODEL = 'gemini-1.5-flash';
 
@@ -9,9 +10,13 @@ async function getGenAI(userId?: string) {
 
   if (userId) {
     await dbConnect();
-    const user = await User.findById(userId).select('geminiApiKey').lean();
-    if (user && user.geminiApiKey) {
-      apiKey = user.geminiApiKey;
+    const user = await User.findById(userId).select('geminiApiKey geminiApiKeyIv').lean();
+    if (user && user.geminiApiKey && user.geminiApiKeyIv) {
+      try {
+        apiKey = decryptValue(user.geminiApiKey, user.geminiApiKeyIv);
+      } catch (err) {
+        console.error('[Gemini] Failed to decrypt user API key, using system key:', err);
+      }
     }
   }
 

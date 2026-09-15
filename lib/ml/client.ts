@@ -1,4 +1,11 @@
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000';
+const ML_API_KEY = process.env.ML_SERVICE_API_KEY || 'mindloom-dev-secret';
+
+// Common headers for all ML service requests
+const ML_HEADERS: Record<string, string> = {
+  'Content-Type': 'application/json',
+  'x-api-key': ML_API_KEY,
+};
 
 // ─── Embeddings ───────────────────────────────────────
 
@@ -8,7 +15,7 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   try {
     const res = await fetch(`${ML_SERVICE_URL}/embed`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: ML_HEADERS,
       body: JSON.stringify({ texts }),
     });
 
@@ -33,7 +40,7 @@ export async function extractEntities(texts: string[]): Promise<string[][]> {
   try {
     const res = await fetch(`${ML_SERVICE_URL}/extract_entities`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: ML_HEADERS,
       body: JSON.stringify({ texts }),
     });
 

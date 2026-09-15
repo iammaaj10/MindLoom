@@ -149,6 +149,7 @@ export async function getDocuments(): Promise<DocumentResult[]> {
   await dbConnect();
   const docs = await DocumentModel.find({ userId: session.userId })
     .sort({ createdAt: -1 })
+    .limit(100) // Fix #10: Pagination/limits
     .lean();
 
   return docs.map((doc) => ({
