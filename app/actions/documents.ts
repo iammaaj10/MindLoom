@@ -133,9 +133,12 @@ export async function uploadDocument(
           
           for (const node of graphData.nodes) {
             try {
+              const allowedTypes = ['Person', 'Organization', 'Location', 'Technology', 'Concept', 'Other'];
+              const safeType = allowedTypes.includes(node.type) ? node.type : 'Other';
+              
               const dbNode = await GraphNode.findOneAndUpdate(
                 { name: node.name, userId: session.userId },
-                { $setOnInsert: { type: node.type, description: node.description } },
+                { $setOnInsert: { type: safeType, description: node.description } },
                 { upsert: true, new: true }
               );
               nodeMap.set(node.name, dbNode._id);

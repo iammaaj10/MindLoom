@@ -4,6 +4,8 @@ import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { getKnowledgeGraph } from '@/app/actions/graph';
 import dynamic from 'next/dynamic';
 import { useTheme } from '@/components/theme/theme-provider';
+import * as THREE from 'three';
+import SpriteText from 'three-spritetext';
 
 // Dynamically import the 3D graph to prevent SSR hydration errors
 const ForceGraph3D = dynamic(() => import('react-force-graph-3d'), { ssr: false });
@@ -75,14 +77,42 @@ export default function KnowledgeGraphPage() {
           <div className="w-full h-full absolute inset-0 cursor-move">
             <ForceGraph3D
               graphData={graphData}
-              nodeLabel={(node: any) => `<div style="padding: 4px 8px; background: rgba(0,0,0,0.8); color: white; border-radius: 4px; font-family: sans-serif; font-size: 12px;"><strong>${node.name}</strong><br/><span style="color: #a1a1aa;">${node.type}</span><br/><br/>${node.description}</div>`}
+              nodeLabel={(node: any) => `<div style="padding: 4px 8px; background: rgba(0,0,0,0.8); color: white; border-radius: 4px; font-family: sans-serif; font-size: 12px; max-width: 200px; text-align: center;"><strong>${node.name}</strong><br/><span style="color: #a1a1aa; font-size: 10px;">${node.type}</span><br/><br/>${node.description}</div>`}
+              nodeThreeObject={(node: any) => {
+                const group = new THREE.Group();
+                
+                // Create glowing sphere
+                const geometry = new THREE.SphereGeometry(node.val * 4, 16, 16);
+                const material = new THREE.MeshPhongMaterial({ 
+                  color: getNodeColor(node.type),
+                  transparent: true,
+                  opacity: 0.9,
+                  shininess: 100,
+                });
+                const sphere = new THREE.Mesh(geometry, material);
+                group.add(sphere);
+
+                // Create text label
+                const sprite = new SpriteText(node.name);
+                sprite.color = theme === 'light' ? '#3f3f46' : '#f4f4f5'; // zinc-700 or zinc-100
+                sprite.textHeight = 3;
+                sprite.position.y = (node.val * 4) + 4; // Float above
+                group.add(sprite);
+
+                return group;
+              }}
               nodeColor={(node: any) => getNodeColor(node.type)}
-              nodeRelSize={6}
               linkColor={() => theme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'}
-              linkWidth={1}
+              linkWidth={0.5}
+              linkDirectionalParticles={2}
+              linkDirectionalParticleWidth={1.5}
+              linkDirectionalParticleSpeed={(d: any) => d.value * 0.003}
+              linkDirectionalParticleColor={(d: any) => getNodeColor(d.source.type || 'Other')}
               backgroundColor={backgroundColor}
-              enableNodeDrag={false}
+              enableNodeDrag={true}
               showNavInfo={false}
+              d3AlphaDecay={0.02}
+              d3VelocityDecay={0.3}
             />
           </div>
         )}

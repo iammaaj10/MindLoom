@@ -208,7 +208,10 @@ export async function extractGraphEntities(
       },
     });
 
-    const responseText = result.response.text();
+    let responseText = result.response.text();
+    // Clean markdown if present
+    responseText = responseText.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
+    
     return JSON.parse(responseText) as GraphExtractionResult;
   } catch (error) {
     console.error('[Gemini] Graph extraction failed:', error);

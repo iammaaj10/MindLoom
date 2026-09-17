@@ -22,6 +22,7 @@
     "recharts": "^3.10.1",
     "server-only": "^0.0.1",
     "three": "^0.185.1",
+    "three-spritetext": "^1.10.0",
     "unpdf": "^1.8.1",
     "zod": "^4.5.4"
   },
