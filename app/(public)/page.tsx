@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { MindloomLogo } from '@/components/ui/mindloom-logo';
 import HeroInteractive from '@/components/landing/hero-interactive';
+import { MotionDiv } from '@/components/ui/motion-div';
 
 export const metadata: Metadata = {
   title: 'Mindloom — Personal AI Companion. Dual-Engine Intelligence.',
@@ -42,7 +43,14 @@ export default function LandingPage() {
           </div>
 
           {/* Apple Pro Display Mockup with 3D Depth */}
-          <div className="relative rounded-3xl p-3 bg-gradient-to-b from-white/[0.12] via-white/[0.04] to-transparent border border-white/[0.12] shadow-[0_25px_80px_rgba(0,0,0,0.85)] transform-gpu hover:scale-[1.008] transition-transform duration-500">
+          <MotionDiv 
+            initial={{ opacity: 0, rotateX: 20, y: 100, scale: 0.95 }}
+            whileInView={{ opacity: 1, rotateX: 0, y: 0, scale: 1 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+            style={{ perspective: "1000px" }}
+            className="relative rounded-3xl p-3 bg-gradient-to-b from-white/[0.12] via-white/[0.04] to-transparent border border-white/[0.12] shadow-[0_25px_80px_rgba(0,0,0,0.85)] transform-gpu hover:scale-[1.008] transition-transform duration-500"
+          >
             <div className="rounded-2xl bg-zinc-950 border border-white/[0.08] overflow-hidden">
               {/* Window Header */}
               <div className="h-10 px-4 bg-zinc-900/60 border-b border-white/[0.06] flex items-center justify-between">
@@ -126,7 +134,7 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
-          </div>
+          </MotionDiv>
         </div>
       </section>
 
@@ -148,7 +156,13 @@ export default function LandingPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Engine 1: Local ML Microservice */}
-          <div className="group rounded-3xl p-8 bg-gradient-to-b from-white/[0.04] to-white/[0.01] border border-white/[0.08] hover:border-cyan-500/40 transition-all duration-500 shadow-2xl relative overflow-hidden transform-gpu hover:-translate-y-1">
+          <MotionDiv 
+            initial={{ opacity: 0, x: -50, y: 50 }}
+            whileInView={{ opacity: 1, x: 0, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="group rounded-3xl p-8 bg-gradient-to-b from-white/[0.04] to-white/[0.01] border border-white/[0.08] hover:border-cyan-500/40 transition-all duration-500 shadow-2xl relative overflow-hidden transform-gpu hover:-translate-y-1"
+          >
             <div className="w-12 h-12 rounded-2xl mb-6 flex items-center justify-center bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 group-hover:scale-110 transition-transform">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
@@ -181,10 +195,16 @@ export default function LandingPage() {
                 <span>Direct structured aggregation from MongoDB</span>
               </li>
             </ul>
-          </div>
+          </MotionDiv>
 
           {/* Engine 2: Cortex Ultra Deep Cognitive Synthesizer */}
-          <div className="group rounded-3xl p-8 bg-gradient-to-b from-white/[0.04] to-white/[0.01] border border-white/[0.08] hover:border-indigo-500/40 transition-all duration-500 shadow-2xl relative overflow-hidden transform-gpu hover:-translate-y-1">
+          <MotionDiv 
+            initial={{ opacity: 0, x: 50, y: 50 }}
+            whileInView={{ opacity: 1, x: 0, y: 0 }}
+            viewport={{ once: true, margin: "-100px" }}
+            transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+            className="group rounded-3xl p-8 bg-gradient-to-b from-white/[0.04] to-white/[0.01] border border-white/[0.08] hover:border-indigo-500/40 transition-all duration-500 shadow-2xl relative overflow-hidden transform-gpu hover:-translate-y-1"
+          >
             <div className="w-12 h-12 rounded-2xl mb-6 flex items-center justify-center bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 group-hover:scale-110 transition-transform">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
                 <path d="M12 2v20M2 12h20M4.929 4.929l14.142 14.142M4.929 19.071L19.071 4.929" />
@@ -217,7 +237,7 @@ export default function LandingPage() {
                 <span>Graceful degradation if cloud network is offline</span>
               </li>
             </ul>
-          </div>
+          </MotionDiv>
         </div>
       </section>
 
@@ -241,7 +261,13 @@ export default function LandingPage() {
           {/* Bento Grid with 3D Hover Depth */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Bento Card 1: Intelligent Ingestion (Wide) */}
-            <div className="md:col-span-2 rounded-3xl p-8 bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] hover:border-white/[0.2] transition-all duration-500 transform-gpu hover:-translate-y-1.5 flex flex-col justify-between shadow-lg">
+            <MotionDiv 
+              initial={{ opacity: 0, scale: 0.9, y: 30 }}
+              whileInView={{ opacity: 1, scale: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="md:col-span-2 rounded-3xl p-8 bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] hover:border-white/[0.2] transition-all duration-500 transform-gpu hover:-translate-y-1.5 flex flex-col justify-between shadow-lg"
+            >
               <div className="space-y-4">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
@@ -264,10 +290,16 @@ export default function LandingPage() {
                 <span className="px-3 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">50-Word Overlap</span>
                 <span className="px-3 py-1 rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-semibold">Week 1 Complete</span>
               </div>
-            </div>
+            </MotionDiv>
 
             {/* Bento Card 2: Spaced Repetition (Tall) */}
-            <div className="rounded-3xl p-8 bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] hover:border-white/[0.2] transition-all duration-500 transform-gpu hover:-translate-y-1.5 flex flex-col justify-between shadow-lg">
+            <MotionDiv 
+              initial={{ opacity: 0, scale: 0.9, y: 30 }}
+              whileInView={{ opacity: 1, scale: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+              className="rounded-3xl p-8 bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] hover:border-white/[0.2] transition-all duration-500 transform-gpu hover:-translate-y-1.5 flex flex-col justify-between shadow-lg"
+            >
               <div className="space-y-4">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 text-amber-400 border border-amber-500/20">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
@@ -286,10 +318,16 @@ export default function LandingPage() {
               <div className="mt-6 pt-4 border-t border-white/[0.06] text-xs font-mono text-amber-400/90">
                 SuperMemo-2 Forgetting Curve
               </div>
-            </div>
+            </MotionDiv>
 
             {/* Bento Card 3: Continuous Journaling */}
-            <div className="rounded-3xl p-8 bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] hover:border-white/[0.2] transition-all duration-500 transform-gpu hover:-translate-y-1.5 flex flex-col justify-between shadow-lg">
+            <MotionDiv 
+              initial={{ opacity: 0, scale: 0.9, y: 30 }}
+              whileInView={{ opacity: 1, scale: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+              className="rounded-3xl p-8 bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] hover:border-white/[0.2] transition-all duration-500 transform-gpu hover:-translate-y-1.5 flex flex-col justify-between shadow-lg"
+            >
               <div className="space-y-4">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
@@ -308,10 +346,16 @@ export default function LandingPage() {
               <div className="mt-6 pt-4 border-t border-white/[0.06] text-xs font-mono text-emerald-400/90">
                 Automated Time & Topic Clustering
               </div>
-            </div>
+            </MotionDiv>
 
             {/* Bento Card 4: Absolute Security & Sovereignty (Wide) */}
-            <div className="md:col-span-2 rounded-3xl p-8 bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] hover:border-white/[0.2] transition-all duration-500 transform-gpu hover:-translate-y-1.5 flex flex-col justify-between shadow-lg">
+            <MotionDiv 
+              initial={{ opacity: 0, scale: 0.9, y: 30 }}
+              whileInView={{ opacity: 1, scale: 1, y: 0 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
+              className="md:col-span-2 rounded-3xl p-8 bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] hover:border-white/[0.2] transition-all duration-500 transform-gpu hover:-translate-y-1.5 flex flex-col justify-between shadow-lg"
+            >
               <div className="space-y-4">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
@@ -331,7 +375,7 @@ export default function LandingPage() {
                 <span className="px-3 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">Compound Indexing</span>
                 <span className="px-3 py-1 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">Client-Side Isolation</span>
               </div>
-            </div>
+            </MotionDiv>
           </div>
         </div>
       </section>
@@ -349,7 +393,13 @@ export default function LandingPage() {
           </h2>
         </div>
 
-        <div className="rounded-3xl border border-white/[0.08] bg-zinc-950/70 overflow-hidden shadow-2xl">
+        <MotionDiv 
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="rounded-3xl border border-white/[0.08] bg-zinc-950/70 overflow-hidden shadow-2xl"
+        >
           <div className="grid grid-cols-3 p-4 sm:p-6 bg-white/[0.02] border-b border-white/[0.06] text-xs font-semibold uppercase tracking-wider text-zinc-400 font-mono">
             <div>Parameter</div>
             <div className="text-cyan-400">Layer 1 (Local ML)</div>
@@ -387,7 +437,7 @@ export default function LandingPage() {
               <div className="text-zinc-300">Synthesis, Complex Reasoning, Mock Interviews</div>
             </div>
           </div>
-        </div>
+        </MotionDiv>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════
@@ -396,7 +446,13 @@ export default function LandingPage() {
       <section className="py-32 px-6 border-t border-white/[0.08] relative">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/[0.03] to-transparent pointer-events-none" />
 
-        <div className="max-w-3xl mx-auto text-center space-y-6 relative z-10">
+        <MotionDiv 
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1, ease: "easeOut" }}
+          className="max-w-3xl mx-auto text-center space-y-6 relative z-10"
+        >
           <div className="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center bg-white/[0.04] border border-white/[0.1] shadow-2xl">
             <MindloomLogo size={36} />
           </div>
@@ -428,7 +484,7 @@ export default function LandingPage() {
           <p className="text-xs text-zinc-500 pt-2 font-mono">
             Free forever for personal use • No credit card required
           </p>
-        </div>
+        </MotionDiv>
       </section>
     </div>
   );
