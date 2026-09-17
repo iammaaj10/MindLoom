@@ -168,7 +168,7 @@ export const getDocuments = cache(async (): Promise<DocumentResult[]> => {
 
 // ─── Delete ───────────────────────────────────────────
 
-export async function deleteDocument(documentId: string): Promise<{ error?: string }> {
+export async function deleteDocument(documentId: string): Promise<{ success?: boolean; error?: string }> {
   const session = await getSession();
   if (!session) {
     return { error: 'You must be logged in.' };
@@ -197,9 +197,48 @@ export async function deleteDocument(documentId: string): Promise<{ error?: stri
     await DocumentModel.deleteOne({ _id: doc._id });
 
     revalidatePath('/documents');
-    return {};
-  } catch (err) {
-    console.error('Delete failed:', err);
-    return { error: 'Failed to delete document.' };
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to delete document:', error);
+    return { error: 'Failed to delete document' };
+  }
+}
+
+// B3: Get document preview content from its chunks
+export async function getDocumentPreview(docId: string) {
+  const session = await getSession();
+  if (!session) return { error: 'Unauthorized' };
+
+  try {
+    await dbConnect();
+
+    const doc = await DocumentModel.findOne({ _id: docId, userId: session.userId })
+      .select('title fileType fileUrl')
+      .lean();
+
+    if (!doc) return { error: 'Document not found' };
+
+    // Fetch the document's chunks in order
+    const chunks = await Chunk.find({ documentId: docId, userId: session.userId })
+      .select('content metadata.chunkIndex')
+      .sort({ 'metadata.chunkIndex': 1 })
+      .limit(50)
+      .lean();
+
+    const content = chunks.map((c: any) => c.content).join('\n\n---\n\n');
+
+    return {
+      success: true,
+      document: {
+        title: doc.title,
+        fileType: doc.fileType,
+        fileUrl: doc.fileUrl,
+        content,
+        chunkCount: chunks.length,
+      },
+    };
+  } catch (error) {
+    console.error('Failed to get document preview:', error);
+    return { error: 'Failed to load preview' };
   }
 }

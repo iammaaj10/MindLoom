@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { submitReview } from '@/app/actions/study';
+import { submitReview, generateFlashcardsFromDocs } from '@/app/actions/study';
 
 interface Props {
   initialItems: any[];
@@ -23,6 +23,10 @@ export default function StudyDashboard({ initialItems }: Props) {
   const [isInterviewing, setIsInterviewing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Flashcard generation state
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [genMsg, setGenMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   // --- Flashcard Handlers ---
   const handleScore = async (quality: number) => {
     if (isSubmitting || items.length === 0) return;
@@ -37,6 +41,23 @@ export default function StudyDashboard({ initialItems }: Props) {
     }
     
     setIsSubmitting(false);
+  };
+
+  // B4: Generate flashcards from documents
+  const handleGenerateFlashcards = async () => {
+    setIsGenerating(true);
+    setGenMsg(null);
+    const res = await generateFlashcardsFromDocs();
+    if (res.success) {
+      setGenMsg({ type: 'success', text: `✨ Generated ${res.added} new flashcards${res.topics ? ': ' + res.topics.join(', ') : ''}` });
+      // Refresh the page to pick up new items
+      if (res.added && res.added > 0) {
+        window.location.reload();
+      }
+    } else if (res.error) {
+      setGenMsg({ type: 'error', text: res.error });
+    }
+    setIsGenerating(false);
   };
 
   // --- Interview Handlers ---
@@ -153,7 +174,29 @@ export default function StudyDashboard({ initialItems }: Props) {
       </div>
 
       {activeTab === 'flashcards' && (
-        <div className="max-w-2xl mx-auto mt-12">
+        <div className="max-w-2xl mx-auto mt-8">
+          {/* B4: AI Generate Button */}
+          <div className="flex items-center justify-between mb-6">
+            <span className="text-xs text-zinc-500 font-mono">{items.length} cards due</span>
+            <button
+              onClick={handleGenerateFlashcards}
+              disabled={isGenerating}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all text-xs font-semibold disabled:opacity-40"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+              {isGenerating ? 'Generating...' : 'AI Generate from Docs'}
+            </button>
+          </div>
+
+          {genMsg && (
+            <div className={`mb-6 p-3 rounded-lg text-sm font-medium animate-fade-up ${
+              genMsg.type === 'success' ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/20 text-rose-400'
+            }`}>
+              {genMsg.text}
+            </div>
+          )}
           {items.length === 0 ? (
             <div className="text-center py-20 border border-dashed border-white/[0.1] rounded-2xl">
               <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto mb-4">

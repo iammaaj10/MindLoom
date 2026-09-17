@@ -106,3 +106,43 @@ export async function wipeUserData() {
     return { error: 'Failed to wipe data' };
   }
 }
+
+// B5: Password change
+export async function changePassword(currentPassword: string, newPassword: string) {
+  const session = await getSession();
+  if (!session) return { error: 'Unauthorized' };
+
+  // Validate
+  if (!currentPassword || !newPassword) {
+    return { error: 'Both fields are required' };
+  }
+  if (newPassword.length < 8) {
+    return { error: 'New password must be at least 8 characters' };
+  }
+  if (currentPassword === newPassword) {
+    return { error: 'New password must be different from current password' };
+  }
+
+  try {
+    await dbConnect();
+    const bcrypt = await import('bcryptjs');
+
+    const user = await User.findById(session.userId).select('passwordHash');
+    if (!user) return { error: 'User not found' };
+
+    // Verify current password
+    const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isValid) {
+      return { error: 'Current password is incorrect' };
+    }
+
+    // Hash and update
+    const newHash = await bcrypt.hash(newPassword, 12);
+    await User.updateOne({ _id: session.userId }, { $set: { passwordHash: newHash } });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Password change failed:', error);
+    return { error: 'Failed to change password' };
+  }
+}

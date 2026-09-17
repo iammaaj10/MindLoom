@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { MindloomLogo } from '@/components/ui/mindloom-logo';
+import { ThemeToggle } from '@/components/theme/theme-provider';
 
 export default function PublicLayout({
   children,
@@ -37,6 +38,8 @@ export default function PublicLayout({
 
           {/* Action CTAs */}
           <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <div className="w-px h-4 bg-white/[0.08]" />
             <Link
               href="/login"
               className="text-xs font-medium text-zinc-300 hover:text-white px-3 py-1.5 rounded-full hover:bg-white/[0.05] transition-all"

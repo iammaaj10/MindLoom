@@ -3,7 +3,7 @@ import dbConnect from '@/lib/db/connection';
 import User from '@/lib/db/models/user';
 import { decryptValue } from '@/lib/crypto';
 
-const MODEL = 'gemini-1.5-flash';
+const MODEL = 'gemini-3.6-flash';
 
 async function getGenAI(userId?: string) {
   let apiKey = process.env.GEMINI_API_KEY;

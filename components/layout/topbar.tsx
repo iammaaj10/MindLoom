@@ -2,6 +2,7 @@
 
 import { logout } from '@/app/actions/auth';
 import { usePathname } from 'next/navigation';
+import { ThemeToggle } from '@/components/theme/theme-provider';
 
 const pageTitles: Record<string, string> = {
   '/dashboard': 'Dashboard',
@@ -40,6 +41,9 @@ export default function Topbar({ userName }: { userName: string }) {
           <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
           <span>Local Engine + Cortex Ultra Hybrid</span>
         </div>
+
+        {/* B2: Theme Toggle */}
+        <ThemeToggle />
 
         <div className="w-px h-4 bg-white/[0.08]" />
 

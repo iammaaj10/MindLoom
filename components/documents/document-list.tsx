@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { deleteDocument, type DocumentResult } from '@/app/actions/documents';
+import DocumentPreview from './document-preview';
 
 function FileTypeIcon({ type }: { type: 'pdf' | 'image' | 'text' }) {
   if (type === 'pdf') {
@@ -97,6 +98,7 @@ function formatDate(iso: string): string {
 
 export default function DocumentList({ documents }: { documents: DocumentResult[] }) {
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleDelete = (docId: string) => {
@@ -125,7 +127,7 @@ export default function DocumentList({ documents }: { documents: DocumentResult[
     );
   }
 
-  return (
+  const grid = (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {documents.map((doc, i) => (
         <div
@@ -187,6 +189,18 @@ export default function DocumentList({ documents }: { documents: DocumentResult[
             </div>
           </div>
 
+          {/* Preview Button */}
+          <button
+            onClick={() => setPreviewId(doc._id)}
+            className="absolute bottom-5 right-5 p-2 rounded-lg text-zinc-500 hover:text-cyan-400 hover:bg-cyan-500/10 opacity-0 group-hover:opacity-100 transition-all"
+            title="Preview document"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+
           {/* Bottom row: Chunks + Date */}
           <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] text-xs">
             <span className="text-zinc-500 text-[11px] font-mono">
@@ -206,5 +220,20 @@ export default function DocumentList({ documents }: { documents: DocumentResult[
         </div>
       ))}
     </div>
+  );
+
+  return (
+    <>
+      {grid}
+
+      {/* B3: Document Preview Modal */}
+      {previewId && (
+        <DocumentPreview
+          docId={previewId}
+          docTitle={documents.find(d => d._id === previewId)?.title || 'Document'}
+          onClose={() => setPreviewId(null)}
+        />
+      )}
+    </>
   );
 }

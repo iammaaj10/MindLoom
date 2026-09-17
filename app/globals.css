@@ -1,10 +1,15 @@
 @import "tailwindcss";
 
-:root {
+/* B2: Theme variables — Dark (default) */
+:root,
+[data-theme="dark"] {
   --bg-root: #000000;
   --bg-surface: #0a0a0a;
   --bg-elevated: #111111;
   --bg-input: #0a0a0a;
+
+  --surface-2: rgba(255, 255, 255, 0.04);
+  --surface-3: rgba(255, 255, 255, 0.08);
 
   --text-primary: #ffffff;
   --text-secondary: #a1a1aa;
@@ -19,6 +24,76 @@
   --radius-sm: 4px;
   --radius-md: 8px;
   --radius-lg: 12px;
+}
+
+/* B2: Light theme using color inversion to cleanly map dark-mode utilities */
+[data-theme="light"] body {
+  background-color: #f8f9fa !important;
+  color: #111 !important;
+}
+
+[data-theme="light"] {
+  --bg-root: #f8f9fa;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f0f1f3;
+  --bg-input: #ffffff;
+  --text-primary: #111111;
+  --text-secondary: #52525b;
+  --text-tertiary: #71717a;
+  --border: #e4e4e7;
+  --border-hover: #d4d4d8;
+  --accent: #111111;
+  --accent-fg: #ffffff;
+}
+
+/* Override hardcoded dark mode utilities in light mode */
+[data-theme="light"] [class*="bg-black"],
+[data-theme="light"] [class*="bg-zinc-950"],
+[data-theme="light"] [class*="bg-zinc-900"] {
+  background-color: var(--bg-root) !important;
+}
+
+[data-theme="light"] [class*="text-white"],
+[data-theme="light"] [class*="text-zinc-100"],
+[data-theme="light"] [class*="text-zinc-200"],
+[data-theme="light"] [class*="text-zinc-300"] {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .text-zinc-400,
+[data-theme="light"] .text-zinc-500 {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] [class*="border-white"] {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] [class*="bg-white/"] {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .bg-white {
+  background-color: #111 !important;
+  color: #fff !important;
+}
+
+[data-theme="light"] .bg-white:hover {
+  background-color: #333 !important;
+}
+
+[data-theme="light"] [class*="from-white"][class*="via-cyan-200"][class*="to-indigo-300"] {
+  background-image: linear-gradient(to right, #111, #0284c7, #4f46e5) !important;
+}
+
+[data-theme="light"] [class*="from-white/"] {
+  --tw-gradient-from: rgba(0, 0, 0, 0.02) var(--tw-gradient-from-position);
+  --tw-gradient-to: rgba(0, 0, 0, 0.05) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+[data-theme="light"] [class*="shadow-[0_4px_25px_rgba"] {
+  box-shadow: 0 4px 25px rgba(0,0,0,0.05) !important;
 }
 
 @theme inline {

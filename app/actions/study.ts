@@ -104,3 +104,88 @@ export async function submitReview(itemId: string, quality: number) {
     return { error: 'Failed to submit review' };
   }
 }
+
+// B4: Auto-generate flashcards from document chunks using Gemini
+export async function generateFlashcardsFromDocs() {
+  const session = await getSession();
+  if (!session) return { error: 'Unauthorized' };
+
+  try {
+    await dbConnect();
+    const { generateWithGemini } = await import('@/lib/ai/gemini');
+    const Chunk = (await import('@/lib/db/models/chunk')).default;
+
+    // Get latest chunks that haven't been turned into flashcards yet
+    const existingTopics = await StudyItem.find({ userId: session.userId }).select('topic').lean();
+    const existingSet = new Set(existingTopics.map((t: any) => t.topic.toLowerCase()));
+
+    const chunks = await Chunk.find({ userId: session.userId })
+      .select('content metadata')
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .lean();
+
+    if (chunks.length === 0) {
+      return { error: 'No documents found. Upload some first!' };
+    }
+
+    // Combine chunk content for Gemini
+    const combinedContent = chunks
+      .map((c: any) => c.content)
+      .join('\n---\n')
+      .slice(0, 8000); // Stay within token limits
+
+    const prompt = `Based on the following content from the user's documents, generate a list of study topics/concepts that would be useful flashcards for spaced repetition review.
+
+Rules:
+- Extract 5-15 key concepts, terms, or facts.
+- Each topic should be a short phrase (2-6 words), like a flashcard front.
+- Focus on technical terms, important concepts, names, and key facts.
+- Return ONLY a JSON array of strings. No explanation.
+- Example output: ["React Server Components", "JWT Token Structure", "MongoDB Aggregation Pipeline"]
+
+Content:
+${combinedContent}`;
+
+    const result = await generateWithGemini(
+      'You are a study flashcard generator. Return only valid JSON arrays.',
+      prompt,
+      session.userId
+    );
+
+    // Parse the response
+    let topics: string[] = [];
+    try {
+      // Extract JSON array from the response (handle markdown code blocks)
+      const jsonMatch = result.text.match(/\[[\s\S]*?\]/);
+      if (jsonMatch) {
+        topics = JSON.parse(jsonMatch[0]);
+      }
+    } catch {
+      console.error('Failed to parse Gemini flashcard response:', result.text);
+      return { error: 'AI returned invalid format. Try again.' };
+    }
+
+    // Filter out topics that already exist
+    const newTopics = topics.filter(t => !existingSet.has(t.toLowerCase()));
+
+    if (newTopics.length === 0) {
+      return { success: true, added: 0, message: 'All generated topics already exist in your study plan!' };
+    }
+
+    // Create study items
+    const items = newTopics.map(topic => ({
+      userId: session.userId,
+      topic,
+      nextReview: new Date(),
+    }));
+
+    await StudyItem.insertMany(items);
+    revalidatePath('/study');
+
+    return { success: true, added: newTopics.length, topics: newTopics };
+  } catch (error) {
+    console.error('Flashcard generation failed:', error);
+    return { error: 'Failed to generate flashcards. Make sure your Gemini API key is configured.' };
+  }
+}
