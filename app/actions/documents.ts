@@ -8,6 +8,8 @@ import { saveFile, deleteFile, getFileType } from '@/lib/storage';
 import { extractText } from '@/lib/ingestion/extractor';
 import { chunkText } from '@/lib/ingestion/chunker';
 import { generateEmbeddings, extractEntities } from '@/lib/ml/client';
+import { extractGraphEntities } from '@/lib/ai/gemini';
+import { GraphNode, GraphEdge } from '@/lib/db/models/graph';
 import { revalidatePath } from 'next/cache';
 import { cache } from 'react';
 
@@ -119,6 +121,47 @@ export async function uploadDocument(
         }));
         
         await Chunk.insertMany(chunkDocuments);
+      }
+
+      // 5.5 Extract Graph Knowledge (Graph RAG)
+      try {
+        const fullText = extractedText.slice(0, 15000); // Avoid massive token counts
+        const graphData = await extractGraphEntities(fullText, session.userId);
+        
+        if (graphData && graphData.nodes && graphData.edges) {
+          const nodeMap = new Map();
+          
+          for (const node of graphData.nodes) {
+            try {
+              const dbNode = await GraphNode.findOneAndUpdate(
+                { name: node.name, userId: session.userId },
+                { $setOnInsert: { type: node.type, description: node.description } },
+                { upsert: true, new: true }
+              );
+              nodeMap.set(node.name, dbNode._id);
+            } catch (err) {
+              console.error('GraphNode insert failed:', err);
+            }
+          }
+
+          for (const edge of graphData.edges) {
+            const sourceId = nodeMap.get(edge.source);
+            const targetId = nodeMap.get(edge.target);
+            if (sourceId && targetId) {
+              try {
+                await GraphEdge.findOneAndUpdate(
+                  { sourceId, targetId, relationship: edge.relationship, userId: session.userId },
+                  { $inc: { weight: 1 } },
+                  { upsert: true }
+                );
+              } catch (err) {
+                console.error('GraphEdge insert failed:', err);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Graph extraction error:', err);
       }
 
       // 6. Update Document status

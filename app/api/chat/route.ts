@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getSession } from '@/lib/auth/session';
 import { classifyIntent } from '@/lib/ai/router';
 import { streamWithGemini, buildSystemPrompt } from '@/lib/ai/gemini';
-import { searchChunks } from '@/lib/ml/retrieval';
+import { searchChunks, searchGraph } from '@/lib/ml/retrieval';
 import { buildContext, contextToPromptBlock } from '@/lib/ml/context';
 import dbConnect from '@/lib/db/connection';
 import ChatMessage from '@/lib/db/models/chat-history';
@@ -108,9 +108,19 @@ export async function POST(request: NextRequest) {
   // 3b. Gemini RAG path — stream the response
   try {
     // Retrieve context
-    const searchResults = await searchChunks(session.userId, message, 5);
+    const [searchResults, graphContextString] = await Promise.all([
+      searchChunks(session.userId, message, 5),
+      searchGraph(session.userId, message)
+    ]);
+    
     const context = buildContext(message, searchResults);
-    const promptBlock = contextToPromptBlock(context);
+    let promptBlock = contextToPromptBlock(context);
+    
+    // Inject Graph Context
+    if (graphContextString) {
+      promptBlock = `${graphContextString}\n\n${promptBlock}`;
+    }
+
     const systemPrompt = buildSystemPrompt(promptBlock);
 
     // Create a ReadableStream for SSE

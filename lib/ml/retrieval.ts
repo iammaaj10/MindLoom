@@ -1,7 +1,8 @@
 import dbConnect from '@/lib/db/connection';
 import Chunk, { IChunk } from '@/lib/db/models/chunk';
-import { embedQuery, calculateSimilarity } from '@/lib/ml/client';
+import { embedQuery, calculateSimilarity, extractEntities } from '@/lib/ml/client';
 import mongoose from 'mongoose';
+import { GraphNode, GraphEdge } from '@/lib/db/models/graph';
 
 // ─── Types ────────────────────────────────────────────
 
@@ -148,3 +149,62 @@ async function inMemorySearch(
 // ─── Math Utilities ───────────────────────────────────
 
 // Replaced by Python ML Service (Task A5)
+
+// ─── Graph RAG ────────────────────────────────────────
+
+export async function searchGraph(
+  userId: string,
+  queryText: string
+): Promise<string> {
+  await dbConnect();
+
+  try {
+    // 1. Extract entities from the user's query
+    const extractedArrays = await extractEntities([queryText]);
+    const extracted = extractedArrays[0] || [];
+    
+    // Clean up entity prefixes like "ENTITY:", "TECH:" from Python ML service
+    const rawEntities = extracted.map(e => e.includes(':') ? e.split(':')[1] : e);
+    
+    if (rawEntities.length === 0) return '';
+
+    // 2. Find matching nodes in the database
+    // Use regex for case-insensitive matching
+    const regexes = rawEntities.map(e => new RegExp(e, 'i'));
+    const nodes = await GraphNode.find({
+      userId: new mongoose.Types.ObjectId(userId),
+      name: { $in: regexes }
+    }).lean();
+
+    if (nodes.length === 0) return '';
+
+    const nodeIds = nodes.map(n => n._id);
+
+    // 3. Find 1-hop edges connected to these nodes
+    const edges = await GraphEdge.find({
+      userId: new mongoose.Types.ObjectId(userId),
+      $or: [{ sourceId: { $in: nodeIds } }, { targetId: { $in: nodeIds } }]
+    })
+      .populate('sourceId', 'name')
+      .populate('targetId', 'name')
+      .sort({ weight: -1 })
+      .limit(20)
+      .lean();
+
+    if (edges.length === 0) return '';
+
+    // 4. Construct the Graph Context string
+    let graphContext = "### Knowledge Graph Relationships:\n";
+    edges.forEach((edge: any) => {
+      const sourceName = edge.sourceId?.name || 'Unknown';
+      const targetName = edge.targetId?.name || 'Unknown';
+      graphContext += `- ${sourceName} ${edge.relationship} ${targetName} (Confidence: ${edge.weight})\n`;
+    });
+
+    return graphContext;
+  } catch (err) {
+    console.error('[GraphRAG] Search failed:', err);
+    return '';
+  }
+}
+

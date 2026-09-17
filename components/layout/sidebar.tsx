@@ -107,6 +107,29 @@ const navSections: NavSection[] = [
         ),
       },
       {
+        label: 'Knowledge Graph',
+        href: '/graph',
+        badge: '3D',
+        badgeColor: 'bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20',
+        icon: (active) => (
+          <svg
+            className={`w-4 h-4 transition-colors ${active ? 'text-cyan-400' : 'text-zinc-400 group-hover:text-zinc-200'}`}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="18" cy="5" r="3" />
+            <circle cx="6" cy="12" r="3" />
+            <circle cx="18" cy="19" r="3" />
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+          </svg>
+        ),
+      },
+      {
         label: 'Search',
         href: '/search',
         badge: 'new',
