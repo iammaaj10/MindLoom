@@ -276,7 +276,7 @@ export default function ChatPage() {
                         }`}
                       >
                         <span className={`w-1.5 h-1.5 rounded-full ${msg.source === 'local' ? 'bg-emerald-400' : 'bg-indigo-400'}`} />
-                        Answered via {msg.source}
+                        {msg.source === 'local' ? 'Retrieved via Local Engine' : 'Synthesized by Cortex Ultra'}
                       </span>
                     </div>
                   )}
