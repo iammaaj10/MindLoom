@@ -205,30 +205,30 @@ export default function ChatPage() {
       <div className="flex-1 flex gap-6 min-h-0">
         
         {/* ─── Sidebar (History) ─── */}
-        <div className="w-64 flex flex-col gap-4">
+        <div className="w-64 flex flex-col gap-4 border-r border-[var(--border)] pr-4">
           <button 
             onClick={handleNewChat}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20 transition-colors text-sm font-semibold"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[var(--text-primary)] text-[var(--bg-root)] hover:opacity-90 transition-all text-sm font-semibold shadow-md active:scale-95"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 5v14M5 12h14"/>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
             New Chat
           </button>
 
-          <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+          <div className="flex-1 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
             {sessions.map(s => (
               <div 
                 key={s._id}
                 onClick={() => handleSelectSession(s._id)}
-                className={`group flex items-center justify-between p-3 rounded-xl border transition-colors cursor-pointer ${activeSessionId === s._id ? 'bg-white/[0.08] border-white/[0.15]' : 'bg-transparent border-transparent hover:bg-white/[0.04]'}`}
+                className={`group flex items-center justify-between px-4 py-3 rounded-xl transition-all cursor-pointer ${activeSessionId === s._id ? 'bg-[var(--bg-elevated)] border border-[var(--border)] shadow-sm' : 'bg-transparent border border-transparent hover:bg-[var(--bg-elevated)]/50'}`}
               >
-                <div className="truncate text-sm text-zinc-300 font-medium">
+                <div className={`truncate text-sm font-medium ${activeSessionId === s._id ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'}`}>
                   {s.title}
                 </div>
                 <button 
                   onClick={(e) => handleDeleteSession(e, s._id)}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-zinc-500 hover:text-rose-400 transition-colors"
+                  className="opacity-0 group-hover:opacity-100 p-1.5 text-[var(--text-secondary)] hover:text-red-500 hover:bg-red-500/10 rounded-md transition-all"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 </button>
@@ -238,18 +238,18 @@ export default function ChatPage() {
         </div>
 
         {/* ─── Chat Window ─── */}
-        <div className="flex-1 flex flex-col bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] rounded-2xl overflow-hidden shadow-[0_4px_25px_rgba(0,0,0,0.4)] relative">
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 flex flex-col bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm relative">
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 custom-scrollbar">
           {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center opacity-60">
-              <div className="w-16 h-16 rounded-2xl bg-white/[0.05] border border-white/[0.1] flex items-center justify-center mb-4">
-                <svg className="w-8 h-8 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <div className="h-full flex flex-col items-center justify-center text-center">
+              <div className="w-20 h-20 rounded-3xl bg-[var(--bg-elevated)] border border-[var(--border)] flex items-center justify-center mb-6 shadow-sm">
+                <svg className="w-10 h-10 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
               </div>
-              <p className="text-sm font-medium text-white">Ask me anything about your documents.</p>
-              <p className="text-xs text-zinc-400 mt-2 max-w-xs leading-relaxed">
-                Try asking "How many documents do I have?" to test the Local Router, or a specific question about your files to test Gemini.
+              <h2 className="text-xl font-semibold text-[var(--text-primary)]">How can I help you today?</h2>
+              <p className="text-sm text-[var(--text-secondary)] mt-2 max-w-md leading-relaxed">
+                Try asking "Summarize my documents" to test the Local Router, or a complex synthesis question to test Cortex Ultra.
               </p>
             </div>
           ) : (
@@ -259,10 +259,10 @@ export default function ChatPage() {
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[85%] rounded-2xl p-4 ${
+                  className={`max-w-[85%] rounded-3xl px-6 py-4 ${
                     msg.role === 'user'
-                      ? 'bg-cyan-500/10 border border-cyan-500/20 text-cyan-50'
-                      : 'bg-white/[0.05] border border-white/[0.08] text-zinc-200 shadow-sm'
+                      ? 'bg-[var(--text-primary)] text-[var(--bg-root)] rounded-tr-sm shadow-md'
+                      : 'bg-[var(--bg-elevated)] border border-[var(--border)] text-[var(--text-primary)] rounded-tl-sm shadow-sm'
                   }`}
                 >
                   {/* Source Badge (for AI) */}
@@ -281,44 +281,52 @@ export default function ChatPage() {
                     </div>
                   )}
 
-                  <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                  <div className="text-[15px] leading-relaxed whitespace-pre-wrap">
                     {msg.content}
                     {msg.isStreaming && (
-                      <span className="inline-block w-1.5 h-3.5 ml-1 bg-cyan-400 animate-pulse" />
+                      <span className="inline-block w-2 h-4 ml-1.5 bg-indigo-500 animate-pulse rounded-sm align-middle" />
                     )}
                   </div>
                 </div>
               </div>
             ))
           )}
-          <div ref={messagesEndRef} />
+          <div ref={messagesEndRef} className="h-4" />
         </div>
 
         {/* Input Area */}
-        <div className="p-4 bg-black/40 border-t border-white/[0.08]">
-          <form onSubmit={handleSubmit} className="relative flex items-center">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Message your AI..."
-              className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl pl-4 pr-12 py-3.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50 transition-all"
-              disabled={isLoading}
-            />
-            <button
-              type="submit"
-              disabled={!input.trim() || isLoading}
-              className="absolute right-2 p-2 rounded-lg bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 disabled:opacity-40 transition-colors"
-            >
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
-              </svg>
-            </button>
+        <div className="p-6 bg-gradient-to-t from-[var(--bg-surface)] pt-4 border-t border-transparent">
+          <form onSubmit={handleSubmit} className="relative flex items-end max-w-4xl mx-auto">
+            <div className="relative w-full bg-[var(--bg-elevated)] border border-[var(--border)] focus-within:border-indigo-500/50 focus-within:ring-4 focus-within:ring-indigo-500/10 rounded-2xl transition-all shadow-sm">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                  }
+                }}
+                placeholder="Message Mindloom..."
+                className="w-full bg-transparent pl-5 pr-14 py-4 min-h-[60px] max-h-[200px] resize-none text-[15px] text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none"
+                rows={1}
+                disabled={isLoading}
+              />
+              <button
+                type="submit"
+                disabled={!input.trim() || isLoading}
+                className="absolute right-3 bottom-3 p-2 rounded-xl bg-[var(--text-primary)] text-[var(--bg-root)] hover:opacity-90 disabled:opacity-30 disabled:hover:opacity-30 transition-all shadow-md active:scale-95"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13" />
+                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                </svg>
+              </button>
+            </div>
           </form>
-          <div className="text-center mt-2">
-            <span className="text-[10px] text-zinc-600 font-mono">
-              MindLoom Cortex Ultra Hybrid Engine
+          <div className="text-center mt-3">
+            <span className="text-[11px] text-[var(--text-tertiary)] font-medium">
+              MindLoom Cortex Ultra Hybrid Engine • AI can make mistakes.
             </span>
           </div>
         </div>
