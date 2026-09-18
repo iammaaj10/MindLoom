@@ -154,13 +154,13 @@ export default function LandingPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8" style={{ perspective: '1200px' }}>
           {/* Engine 1: Local ML Microservice */}
           <MotionDiv 
-            initial={{ opacity: 0, x: -50, y: 50 }}
-            whileInView={{ opacity: 1, x: 0, y: 0 }}
+            initial={{ opacity: 0, x: -60, y: 40, rotateY: -15 }}
+            whileInView={{ opacity: 1, x: 0, y: 0, rotateY: 0 }}
             viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
             className="group rounded-3xl p-8 bg-gradient-to-b from-white/[0.04] to-white/[0.01] border border-white/[0.08] hover:border-cyan-500/40 transition-all duration-500 shadow-2xl relative overflow-hidden transform-gpu hover:-translate-y-1"
           >
             <div className="w-12 h-12 rounded-2xl mb-6 flex items-center justify-center bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 group-hover:scale-110 transition-transform">
@@ -199,10 +199,10 @@ export default function LandingPage() {
 
           {/* Engine 2: Cortex Ultra Deep Cognitive Synthesizer */}
           <MotionDiv 
-            initial={{ opacity: 0, x: 50, y: 50 }}
-            whileInView={{ opacity: 1, x: 0, y: 0 }}
+            initial={{ opacity: 0, x: 60, y: 40, rotateY: 15 }}
+            whileInView={{ opacity: 1, x: 0, y: 0, rotateY: 0 }}
             viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
             className="group rounded-3xl p-8 bg-gradient-to-b from-white/[0.04] to-white/[0.01] border border-white/[0.08] hover:border-indigo-500/40 transition-all duration-500 shadow-2xl relative overflow-hidden transform-gpu hover:-translate-y-1"
           >
             <div className="w-12 h-12 rounded-2xl mb-6 flex items-center justify-center bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 group-hover:scale-110 transition-transform">
@@ -259,121 +259,129 @@ export default function LandingPage() {
           </div>
 
           {/* Bento Grid with 3D Hover Depth */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Bento Card 1: Intelligent Ingestion (Wide) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6" style={{ perspective: '1200px' }}>
+            {/* Bento Card 1: Hybrid Dual-Layer Chat (Wide) */}
             <MotionDiv 
-              initial={{ opacity: 0, scale: 0.9, y: 30 }}
-              whileInView={{ opacity: 1, scale: 1, y: 0 }}
+              initial={{ opacity: 0, scale: 0.95, y: 60, rotateX: 10 }}
+              whileInView={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
               viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="md:col-span-2 rounded-3xl p-8 bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] hover:border-white/[0.2] transition-all duration-500 transform-gpu hover:-translate-y-1.5 flex flex-col justify-between shadow-lg"
+              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+              className="md:col-span-2 rounded-3xl p-8 bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] hover:border-white/[0.2] transition-all duration-500 transform-gpu hover:-translate-y-1.5 flex flex-col justify-between shadow-lg relative overflow-hidden"
             >
-              <div className="space-y-4">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 blur-[80px] rounded-full pointer-events-none" />
+              
+              <div className="space-y-4 relative z-10">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                    <polyline points="14 2 14 8 20 8" />
-                    <line x1="16" y1="13" x2="8" y2="13" />
-                    <line x1="16" y1="17" x2="8" y2="17" />
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                   </svg>
                 </div>
                 <h3 className="text-2xl font-semibold text-white tracking-tight">
-                  Precision Ingestion & Sliding-Window Chunker
+                  Hybrid Dual-Layer RAG Chat
                 </h3>
                 <p className="text-zinc-400 text-sm leading-relaxed max-w-lg">
-                  Upload PDFs, text, and markdown files. Mindloom automatically extracts raw text streams via pure Node.js parsers and slices documents into overlapping 250-word chunks stored in MongoDB Atlas, ready for vector indexing.
+                  Ask anything about your documents. Mindloom intelligently routes simple lookups to an ultra-fast on-device Local Engine, and seamlessly escalates complex synthesis tasks to the powerful Cortex Ultra (Gemini) cloud model.
                 </p>
               </div>
 
-              <div className="mt-8 pt-6 border-t border-white/[0.06] flex flex-wrap items-center gap-4 text-xs font-mono text-zinc-400">
-                <span className="px-3 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">PDF / TXT / MD</span>
-                <span className="px-3 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">50-Word Overlap</span>
-                <span className="px-3 py-1 rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-semibold">Week 1 Complete</span>
+              <div className="mt-8 pt-6 border-t border-white/[0.06] flex flex-wrap items-center gap-4 text-xs font-mono text-zinc-400 relative z-10">
+                <span className="px-3 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">Sub-45ms Local</span>
+                <span className="px-3 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">Auto-Routing</span>
+                <span className="px-3 py-1 rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 font-semibold">Active</span>
               </div>
             </MotionDiv>
 
-            {/* Bento Card 2: Spaced Repetition (Tall) */}
+            {/* Bento Card 2: 3D Knowledge Graph (Tall) */}
             <MotionDiv 
-              initial={{ opacity: 0, scale: 0.9, y: 30 }}
-              whileInView={{ opacity: 1, scale: 1, y: 0 }}
+              initial={{ opacity: 0, scale: 0.95, y: 60, rotateX: 10 }}
+              whileInView={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
               viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
-              className="rounded-3xl p-8 bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] hover:border-white/[0.2] transition-all duration-500 transform-gpu hover:-translate-y-1.5 flex flex-col justify-between shadow-lg"
+              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+              className="rounded-3xl p-8 bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] hover:border-white/[0.2] transition-all duration-500 transform-gpu hover:-translate-y-1.5 flex flex-col justify-between shadow-lg relative overflow-hidden"
             >
-              <div className="space-y-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              <div className="absolute -top-10 -right-10 w-48 h-48 bg-fuchsia-500/10 blur-[60px] rounded-full pointer-events-none" />
+
+              <div className="space-y-4 relative z-10">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/20">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                    <circle cx="18" cy="5" r="3" />
+                    <circle cx="6" cy="12" r="3" />
+                    <circle cx="18" cy="19" r="3" />
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
                   </svg>
                 </div>
                 <h3 className="text-xl font-semibold text-white tracking-tight">
-                  SM-2 Spaced Repetition
+                  Interactive 3D Knowledge Graph
                 </h3>
                 <p className="text-zinc-400 text-sm leading-relaxed">
-                  Scientifically calculated memory retention curves. Identifies topics you haven’t reviewed recently and generates mock interview sessions.
+                  Your documents are automatically parsed into entities and relationships, generating a beautiful, physics-based 3D glassmorphic web of your entire cognitive network.
                 </p>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-white/[0.06] text-xs font-mono text-amber-400/90">
-                SuperMemo-2 Forgetting Curve
+              <div className="mt-6 pt-4 border-t border-white/[0.06] text-xs font-mono text-fuchsia-400/90 relative z-10">
+                ThreeJS Force Directed
               </div>
             </MotionDiv>
 
-            {/* Bento Card 3: Continuous Journaling */}
+            {/* Bento Card 3: AI Mock Interviewer */}
             <MotionDiv 
-              initial={{ opacity: 0, scale: 0.9, y: 30 }}
-              whileInView={{ opacity: 1, scale: 1, y: 0 }}
+              initial={{ opacity: 0, scale: 0.95, y: 60, rotateX: 10 }}
+              whileInView={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
               viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
-              className="rounded-3xl p-8 bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] hover:border-white/[0.2] transition-all duration-500 transform-gpu hover:-translate-y-1.5 flex flex-col justify-between shadow-lg"
+              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+              className="rounded-3xl p-8 bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] hover:border-white/[0.2] transition-all duration-500 transform-gpu hover:-translate-y-1.5 flex flex-col justify-between shadow-lg relative overflow-hidden"
             >
-              <div className="space-y-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-500/10 blur-[50px] rounded-full pointer-events-none" />
+
+              <div className="space-y-4 relative z-10">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 text-amber-400 border border-amber-500/20">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
                     <path d="M12 20h9" />
                     <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                   </svg>
                 </div>
                 <h3 className="text-xl font-semibold text-white tracking-tight">
-                  Cognitive Journal & Logging
+                  AI Mock Interviewer
                 </h3>
                 <p className="text-zinc-400 text-sm leading-relaxed">
-                  Input free-form reflections each day. Mindloom extracts topics, skills, and time allocation automatically, generating live productivity charts.
+                  Select any topic from your vault. Mindloom acts as a strict but encouraging technical interviewer, testing your retention based strictly on your uploaded files.
                 </p>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-white/[0.06] text-xs font-mono text-emerald-400/90">
-                Automated Time & Topic Clustering
+              <div className="mt-6 pt-4 border-t border-white/[0.06] text-xs font-mono text-amber-400/90 relative z-10">
+                Context-Aware Interrogation
               </div>
             </MotionDiv>
 
-            {/* Bento Card 4: Absolute Security & Sovereignty (Wide) */}
+            {/* Bento Card 4: Precision Privacy (Wide) */}
             <MotionDiv 
-              initial={{ opacity: 0, scale: 0.9, y: 30 }}
-              whileInView={{ opacity: 1, scale: 1, y: 0 }}
+              initial={{ opacity: 0, scale: 0.95, y: 60, rotateX: 10 }}
+              whileInView={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }}
               viewport={{ once: true, margin: "-50px" }}
-              transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
-              className="md:col-span-2 rounded-3xl p-8 bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] hover:border-white/[0.2] transition-all duration-500 transform-gpu hover:-translate-y-1.5 flex flex-col justify-between shadow-lg"
+              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
+              className="md:col-span-2 rounded-3xl p-8 bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] hover:border-white/[0.2] transition-all duration-500 transform-gpu hover:-translate-y-1.5 flex flex-col justify-between shadow-lg relative overflow-hidden"
             >
-              <div className="space-y-4">
+              <div className="absolute top-1/2 left-1/4 w-72 h-72 bg-indigo-500/10 blur-[100px] rounded-full pointer-events-none transform -translate-y-1/2" />
+
+              <div className="space-y-4 relative z-10">
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                   </svg>
                 </div>
                 <h3 className="text-2xl font-semibold text-white tracking-tight">
-                  Zero Data Leakage & Perimeter Defense
+                  Precision Ingestion & Zero Leakage
                 </h3>
                 <p className="text-zinc-400 text-sm leading-relaxed max-w-lg">
-                  Encrypted at rest and isolated by per-user tenant keys in MongoDB. Your private documents are never retained by model training pipelines or external surveillance systems.
+                  Documents are sliced into optimal 250-word overlapping chunks and vectorized locally using Xenova/all-MiniLM-L6-v2. Your vault is secured by strict tenant-isolation and HTTP-Only JWTs.
                 </p>
               </div>
 
-              <div className="mt-8 pt-6 border-t border-white/[0.06] flex flex-wrap items-center gap-4 text-xs font-mono text-zinc-400">
-                <span className="px-3 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">HTTP-Only JWTs</span>
-                <span className="px-3 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">Compound Indexing</span>
-                <span className="px-3 py-1 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">Client-Side Isolation</span>
+              <div className="mt-8 pt-6 border-t border-white/[0.06] flex flex-wrap items-center gap-4 text-xs font-mono text-zinc-400 relative z-10">
+                <span className="px-3 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">Local Embeddings</span>
+                <span className="px-3 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">Sliding-Window Chunker</span>
+                <span className="px-3 py-1 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">Absolute Sovereignty</span>
               </div>
             </MotionDiv>
           </div>
@@ -394,10 +402,10 @@ export default function LandingPage() {
         </div>
 
         <MotionDiv 
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, y: 60, rotateX: 10 }}
+          whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
           viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
+          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
           className="rounded-3xl border border-white/[0.08] bg-zinc-950/70 overflow-hidden shadow-2xl"
         >
           <div className="grid grid-cols-3 p-4 sm:p-6 bg-white/[0.02] border-b border-white/[0.06] text-xs font-semibold uppercase tracking-wider text-zinc-400 font-mono">
