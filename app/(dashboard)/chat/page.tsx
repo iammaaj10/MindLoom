@@ -193,9 +193,9 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
+    <div className="flex flex-col h-[calc(100vh-5rem)]">
       {/* ─── Header ─── */}
-      <div className="mb-6">
+      <div className="mb-4">
         <h1 className="text-2xl font-bold tracking-tight text-white">AI Companion</h1>
         <p className="text-sm text-zinc-400 mt-1">
           Dual-layer hybrid RAG chat. Queries are routed locally or to Gemini automatically.
