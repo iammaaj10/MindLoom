@@ -33,7 +33,8 @@ export default function KnowledgeGraphPage() {
     }
   };
 
-  const backgroundColor = theme === 'light' ? '#f8f9fa' : '#0a0a0a';
+  const fgRef = useRef<any>(null);
+  const initialZoomDone = useRef(false);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[var(--bg-surface)]">
@@ -75,45 +76,100 @@ export default function KnowledgeGraphPage() {
           </div>
         ) : (
           <div className="w-full h-full absolute inset-0 cursor-move">
+            {/* Ambient Background */}
+            <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 via-black to-black pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan-500/10 rounded-full blur-[150px] pointer-events-none" />
             <ForceGraph3D
+              ref={fgRef}
               graphData={graphData}
-              nodeLabel={(node: any) => `<div style="padding: 4px 8px; background: rgba(0,0,0,0.8); color: white; border-radius: 4px; font-family: sans-serif; font-size: 12px; max-width: 200px; text-align: center;"><strong>${node.name}</strong><br/><span style="color: #a1a1aa; font-size: 10px;">${node.type}</span><br/><br/>${node.description}</div>`}
+              nodeLabel={(node: any) => `<div style="padding: 6px 10px; background: rgba(0,0,0,0.85); border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 8px; font-family: sans-serif; font-size: 13px; max-width: 250px; text-align: left; backdrop-filter: blur(4px); box-shadow: 0 4px 20px rgba(0,0,0,0.5);"><strong>${node.name}</strong><br/><span style="color: #a1a1aa; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">${node.type}</span><br/><div style="margin-top: 6px; color: #d4d4d8; line-height: 1.4;">${node.description}</div></div>`}
               nodeThreeObject={(node: any) => {
                 const group = new THREE.Group();
+                const nodeSize = (node.val || 2) * 1.5;
                 
-                // Create glowing sphere
-                const geometry = new THREE.SphereGeometry(node.val * 4, 16, 16);
-                const material = new THREE.MeshPhongMaterial({ 
+                // Create glowing glass sphere
+                const geometry = new THREE.SphereGeometry(nodeSize, 32, 32);
+                const material = new THREE.MeshPhysicalMaterial({ 
                   color: getNodeColor(node.type),
                   transparent: true,
-                  opacity: 0.9,
-                  shininess: 100,
+                  opacity: 0.8,
+                  roughness: 0.2,
+                  metalness: 0.1,
+                  transmission: 0.5,
+                  thickness: 1.5,
+                  clearcoat: 1.0,
+                  clearcoatRoughness: 0.1,
                 });
                 const sphere = new THREE.Mesh(geometry, material);
                 group.add(sphere);
 
                 // Create text label
                 const sprite = new SpriteText(node.name);
-                sprite.color = theme === 'light' ? '#3f3f46' : '#f4f4f5'; // zinc-700 or zinc-100
-                sprite.textHeight = 3;
-                sprite.position.y = (node.val * 4) + 4; // Float above
+                sprite.color = theme === 'light' ? '#18181b' : '#f4f4f5'; 
+                sprite.textHeight = 3.5;
+                sprite.position.y = -(nodeSize + 4); // Float below
+                sprite.renderOrder = 999; // Always render on top
+                sprite.material.depthTest = false;
                 group.add(sprite);
 
                 return group;
               }}
               nodeColor={(node: any) => getNodeColor(node.type)}
-              linkColor={() => theme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'}
-              linkWidth={0.5}
-              linkDirectionalParticles={2}
-              linkDirectionalParticleWidth={1.5}
-              linkDirectionalParticleSpeed={(d: any) => d.value * 0.003}
+              linkColor={() => theme === 'light' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)'}
+              linkWidth={0.8}
+              linkDirectionalParticles={3}
+              linkDirectionalParticleWidth={2}
+              linkDirectionalParticleSpeed={(d: any) => 0.005}
               linkDirectionalParticleColor={(d: any) => getNodeColor(d.source.type || 'Other')}
-              backgroundColor={backgroundColor}
+              backgroundColor="rgba(0,0,0,0)"
+
               enableNodeDrag={true}
               showNavInfo={false}
               d3AlphaDecay={0.02}
               d3VelocityDecay={0.3}
+              onNodeClick={(node: any) => {
+                // Focus camera on clicked node
+                if (fgRef.current) {
+                  const distance = 40;
+                  const distRatio = 1 + distance/Math.hypot(node.x, node.y, node.z);
+                  fgRef.current.cameraPosition(
+                    { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio },
+                    node,
+                    1500
+                  );
+                }
+              }}
+              onEngineStop={() => {
+                // Only auto-zoom on the very first layout stabilization
+                if (fgRef.current && !initialZoomDone.current && graphData.nodes.length > 0) {
+                  // Fit graph to screen with 75px padding, taking 800ms
+                  fgRef.current.zoomToFit(800, 75, () => true);
+                  
+                  // Set finite scroll/zoom limits
+                  const controls = fgRef.current.controls();
+                  if (controls) {
+                    controls.minDistance = 25; // Prevent zooming too close (inside a node)
+                    controls.maxDistance = 600; // Prevent zooming too far out into the void
+                  }
+                  
+                  initialZoomDone.current = true;
+                }
+              }}
             />
+
+            {/* Helper Overlay */}
+            <div className="absolute bottom-6 right-6 px-4 py-3 bg-black/40 backdrop-blur-md border border-white/10 rounded-xl text-xs text-white/70 font-mono shadow-2xl pointer-events-none">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-3">
+                  <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded border border-white/20">Left-Click Drag</kbd> Rotate</span>
+                  <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded border border-white/20">Right-Click Drag</kbd> Pan Graph</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded border border-white/20">Scroll</kbd> Zoom</span>
+                  <span><kbd className="px-1.5 py-0.5 bg-white/10 rounded border border-white/20">Click Node</kbd> Focus & Drag</span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
