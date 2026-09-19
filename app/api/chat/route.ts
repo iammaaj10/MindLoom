@@ -7,6 +7,7 @@ import { buildContext, contextToPromptBlock } from '@/lib/ml/context';
 import dbConnect from '@/lib/db/connection';
 import ChatMessage from '@/lib/db/models/chat-history';
 import ChatSession from '@/lib/db/models/chat-session';
+import Memory from '@/lib/db/models/memory';
 import { z } from 'zod';
 
 export const runtime = 'nodejs';
@@ -121,7 +122,29 @@ export async function POST(request: NextRequest) {
       promptBlock = `${graphContextString}\n\n${promptBlock}`;
     }
 
-    const systemPrompt = buildSystemPrompt(promptBlock);
+    // Fetch last 5 messages for conversational history
+    const recentMessages = await ChatMessage.find({ sessionId: activeSessionId })
+      .sort({ createdAt: -1 })
+      .limit(6) // 5 history + the one we just saved
+      .lean();
+    
+    // Sort chronologically and exclude the current message
+    recentMessages.reverse();
+    const historyMsgs = recentMessages.slice(0, -1);
+    
+    const history = historyMsgs.map((m: any) => ({
+      role: m.role === 'user' ? 'user' : 'model',
+      parts: [{ text: m.content }],
+    }));
+
+    // Fetch user memories
+    const memories = await Memory.find({ userId: session.userId }).lean();
+    let memoryContext = '';
+    if (memories.length > 0) {
+      memoryContext = `\n\n<user_memory>\n${memories.map(m => `- ${m.category}: ${m.content}`).join('\n')}\n</user_memory>`;
+    }
+
+    const systemPrompt = buildSystemPrompt(promptBlock) + memoryContext;
 
     // Create a ReadableStream for SSE
     const encoder = new TextEncoder();
@@ -138,7 +161,8 @@ export async function POST(request: NextRequest) {
           );
 
           // Stream Gemini response
-          for await (const chunk of streamWithGemini(systemPrompt, message, session.userId)) {
+          const generator = streamWithGemini(systemPrompt, message, session.userId, history);
+          for await (const chunk of generator) {
             fullText += chunk;
             controller.enqueue(
               encoder.encode(

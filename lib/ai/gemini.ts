@@ -96,7 +96,8 @@ export async function generateWithGemini(
 export async function* streamWithGemini(
   systemPrompt: string,
   userMessage: string,
-  userId?: string
+  userId?: string,
+  history: { role: string; parts: { text: string }[] }[] = []
 ): AsyncGenerator<string, void, unknown> {
   try {
     const genAI = await getGenAI(userId);
@@ -105,8 +106,10 @@ export async function* streamWithGemini(
       systemInstruction: systemPrompt,
     });
 
+    const contents = [...history, { role: 'user', parts: [{ text: userMessage }] }];
+
     const result = await model.generateContentStream({
-      contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+      contents,
       generationConfig: {
         maxOutputTokens: 2048,
         temperature: 0.7,
