@@ -16,6 +16,7 @@ interface CompressedChunk {
   topic: string;
   chunkIndex: number;
   documentId: string;
+  chunkId: string;
 }
 
 // ─── Context Builder ─────────────────────────────────
@@ -49,6 +50,7 @@ export function buildContext(
     topic: chunk.metadata?.topic || 'general',
     chunkIndex: chunk.metadata?.chunkIndex ?? -1,
     documentId: chunk.documentId,
+    chunkId: chunk._id,
   }));
 
   // Build a one-line summary of what we found
@@ -80,7 +82,7 @@ export function contextToPromptBlock(ctx: CompressedContext): string {
   }
 
   for (const chunk of ctx.chunks) {
-    lines.push(`<chunk score="${chunk.score}" topic="${chunk.topic}" index="${chunk.chunkIndex}">`);
+    lines.push(`<chunk chunk_id="${chunk.chunkId}" score="${chunk.score}" topic="${chunk.topic}" index="${chunk.chunkIndex}">`);
     lines.push(chunk.content);
     lines.push('</chunk>');
   }

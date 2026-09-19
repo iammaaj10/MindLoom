@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { getChatSessions, getChatMessages, deleteChatSession } from '@/app/actions/chat';
+import { getChatSessions, getChatMessages, deleteChatSession, getChunkContent } from '@/app/actions/chat';
 
 type Message = {
   id: string;
@@ -26,6 +26,11 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isSubmittingRef = useRef(false); // Fix A2: Guard against double-submit
   
+  const [selectedCitationId, setSelectedCitationId] = useState<string | null>(null);
+  const [citationContextMsg, setCitationContextMsg] = useState<string>('');
+  const [citationContent, setCitationContent] = useState<{content: string, documentId: string, documentTitle?: string} | null>(null);
+  const [isCitationLoading, setIsCitationLoading] = useState(false);
+  
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -33,6 +38,52 @@ export default function ChatPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleCitationClick = async (chunkId: string, contextSentence: string) => {
+    setSelectedCitationId(chunkId);
+    setCitationContextMsg(contextSentence.trim());
+    setCitationContent(null);
+    setIsCitationLoading(true);
+    const res = await getChunkContent(chunkId);
+    if (res.success) {
+      setCitationContent(res.chunk);
+    }
+    setIsCitationLoading(false);
+  };
+
+  const renderContentWithCitations = (content: string) => {
+    const citationRegex = /\[([a-f0-9]{24})\]/g;
+    const parts = [];
+    let lastIndex = 0;
+    let match;
+    let citationCount = 0;
+  
+    while ((match = citationRegex.exec(content)) !== null) {
+      const textBefore = content.slice(lastIndex, match.index);
+      parts.push(textBefore);
+      
+      // Extract the last sentence before the citation for context
+      const sentences = textBefore.split(/(?<=[.!?])\s+/);
+      const citedSentence = sentences[sentences.length - 1] || textBefore;
+
+      citationCount++;
+      const chunkId = match[1];
+      
+      parts.push(
+        <button
+          key={`cite-${match.index}`}
+          onClick={() => handleCitationClick(chunkId, citedSentence)}
+          className="inline-flex items-center justify-center min-w-[1.25rem] h-5 mx-1 px-1 text-[10px] font-bold font-mono text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 rounded cursor-pointer transition-colors align-text-bottom"
+          title="View Source Citation"
+        >
+          {citationCount}
+        </button>
+      );
+      lastIndex = citationRegex.lastIndex;
+    }
+    parts.push(content.slice(lastIndex));
+    return parts;
+  };
 
   // Load sessions on mount
   useEffect(() => {
@@ -282,7 +333,7 @@ export default function ChatPage() {
                   )}
 
                   <div className="text-[15px] leading-relaxed whitespace-pre-wrap">
-                    {msg.content}
+                    {renderContentWithCitations(msg.content)}
                     {msg.isStreaming && (
                       <span className="inline-block w-2 h-4 ml-1.5 bg-indigo-500 animate-pulse rounded-sm align-middle" />
                     )}
@@ -332,6 +383,54 @@ export default function ChatPage() {
         </div>
       </div>
     </div>
+
+      {/* Citation Modal */}
+      {selectedCitationId && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6" onClick={() => setSelectedCitationId(null)}>
+          <div 
+            className="w-full max-w-lg bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-elevated)]">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] uppercase tracking-wider font-mono">Source Citation</h3>
+              <button onClick={() => setSelectedCitationId(null)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                ✕
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[60vh] custom-scrollbar text-[var(--text-primary)] text-sm leading-relaxed whitespace-pre-wrap">
+              {isCitationLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : citationContent ? (
+                <>
+                  {citationContextMsg && (
+                    <div className="mb-6 pb-4 border-b border-[var(--border)]">
+                      <div className="text-[11px] font-bold tracking-wider text-[var(--text-tertiary)] uppercase mb-2">Cited for:</div>
+                      <div className="text-[14px] text-[var(--text-secondary)] italic">"{citationContextMsg}"</div>
+                    </div>
+                  )}
+                  <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-xs font-mono text-indigo-400">
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                      <polyline points="10 9 9 9 8 9" />
+                    </svg>
+                    {citationContent.documentTitle || citationContent.documentId}
+                  </div>
+                  <div className="bg-[var(--bg-root)] border border-[var(--border)] rounded-xl p-4 text-[13.5px] leading-relaxed text-[var(--text-secondary)] font-serif shadow-inner">
+                    {citationContent.content}
+                  </div>
+                </>
+              ) : (
+                <div className="text-red-400">Failed to load citation content.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

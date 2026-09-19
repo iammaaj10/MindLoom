@@ -135,7 +135,7 @@ IMPORTANT RULES:
 - You answer ONLY based on the user's own documents provided in <context> below.
 - If the context doesn't contain enough information, say so honestly — do NOT hallucinate.
 - Be concise, clear, and helpful.
-- When referencing specific information, mention which document/topic it came from.
+- CITATIONS ARE MANDATORY: When you reference specific information, you MUST append the relevant chunk_id to the end of the sentence formatted exactly like this: [chunk_id]. Example: "MongoDB uses BSON documents [60f7...]." If combining facts from multiple chunks, cite both: "Distributed systems are hard [60f7...][60f8...]."
 - Use markdown formatting for readability (bold, lists, code blocks when appropriate).
 
 ${contextBlock}`;

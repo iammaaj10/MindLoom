@@ -4,6 +4,8 @@ import { getSession } from '@/lib/auth/session';
 import dbConnect from '@/lib/db/connection';
 import ChatSession from '@/lib/db/models/chat-session';
 import ChatMessage from '@/lib/db/models/chat-history';
+import Chunk from '@/lib/db/models/chunk';
+import Document from '@/lib/db/models/document';
 import { revalidatePath } from 'next/cache';
 
 export async function getChatSessions() {
@@ -61,5 +63,31 @@ export async function deleteChatSession(sessionId: string) {
   } catch (error) {
     console.error('Failed to delete chat session:', error);
     return { error: 'Failed to delete session' };
+  }
+}
+
+export async function getChunkContent(chunkId: string) {
+  const session = await getSession();
+  if (!session) return { error: 'Unauthorized' };
+
+  try {
+    await dbConnect();
+    const chunk = await Chunk.findOne({ 
+      _id: chunkId,
+      userId: session.userId 
+    }).populate('documentId', 'title').select('content metadata documentId').lean();
+
+    if (!chunk) return { error: 'Chunk not found' };
+
+    const responseData = {
+      content: chunk.content,
+      documentId: (chunk.documentId as any)?._id || chunk.documentId,
+      documentTitle: (chunk.documentId as any)?.title || 'Unknown Document',
+    };
+
+    return { success: true, chunk: JSON.parse(JSON.stringify(responseData)) };
+  } catch (error) {
+    console.error('Failed to get chunk content:', error);
+    return { error: 'Failed to fetch citation' };
   }
 }
