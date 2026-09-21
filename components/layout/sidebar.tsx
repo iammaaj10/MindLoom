@@ -230,6 +230,25 @@ const navSections: NavSection[] = [
           </svg>
         ),
       },
+      {
+        label: 'Telemetry',
+        href: '/telemetry',
+        badge: 'new',
+        badgeColor: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+        icon: (active) => (
+          <svg
+            className={`w-4 h-4 transition-colors ${active ? 'text-cyan-400' : 'text-zinc-400 group-hover:text-zinc-200'}`}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+          </svg>
+        ),
+      },
     ],
   },
 ];

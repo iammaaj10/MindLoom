@@ -13,6 +13,28 @@ import { GraphNode, GraphEdge } from '@/lib/db/models/graph';
 import { ingestionQueue, ingestionWorker } from '@/lib/queue/ingestion-queue';
 import { revalidatePath } from 'next/cache';
 import { cache } from 'react';
+import { z } from 'zod';
+
+// ─── Validation Schemas ──────────────────────────────
+const TitleSchema = z.string().max(200, 'Title too long').optional();
+const CategorySchema = z.string().max(50, 'Category too long').optional();
+const DocIdSchema = z.string().min(1).max(100);
+
+// ─── Magic byte signatures for file verification ─────
+const FILE_SIGNATURES: Record<string, number[]> = {
+  'application/pdf': [0x25, 0x50, 0x44, 0x46], // %PDF
+  'image/png': [0x89, 0x50, 0x4E, 0x47],       // .PNG
+  'image/jpeg': [0xFF, 0xD8, 0xFF],             // JFIF
+  'image/webp': [0x52, 0x49, 0x46, 0x46],       // RIFF
+};
+
+async function verifyFileMagicBytes(file: File): Promise<boolean> {
+  const sig = FILE_SIGNATURES[file.type];
+  if (!sig) return true; // text/plain, text/markdown don't have magic bytes
+  const buffer = await file.slice(0, 8).arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  return sig.every((b, i) => bytes[i] === b);
+}
 
 // ─── Types ────────────────────────────────────────────
 
@@ -44,8 +66,17 @@ export async function uploadDocument(
   }
 
   const file = formData.get('file') as File | null;
-  const title = (formData.get('title') as string)?.trim();
-  const category = (formData.get('category') as string)?.trim() || 'general';
+  const rawTitle = (formData.get('title') as string)?.trim();
+  const rawCategory = (formData.get('category') as string)?.trim() || 'general';
+
+  // Validate inputs with Zod
+  const titleParsed = TitleSchema.safeParse(rawTitle);
+  if (!titleParsed.success) return { error: titleParsed.error.issues[0].message };
+  const title = titleParsed.data;
+
+  const categoryParsed = CategorySchema.safeParse(rawCategory);
+  if (!categoryParsed.success) return { error: categoryParsed.error.issues[0].message };
+  const category = categoryParsed.data || 'general';
 
   if (!file || file.size === 0) {
     return { error: 'Please select a file to upload.' };
@@ -69,6 +100,12 @@ export async function uploadDocument(
   ];
   if (!allowedTypes.includes(file.type) && !file.name.endsWith('.md')) {
     return { error: 'Unsupported file type. Use PDF, TXT, MD, PNG, JPG, or WebP.' };
+  }
+
+  // Verify magic bytes match declared MIME type
+  const validMagic = await verifyFileMagicBytes(file);
+  if (!validMagic) {
+    return { error: 'File content does not match its declared type. Upload rejected for security.' };
   }
 
   try {

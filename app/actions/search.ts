@@ -3,6 +3,12 @@
 import { getSession } from '@/lib/auth/session';
 import { searchChunks, SearchResult } from '@/lib/ml/retrieval';
 import { buildContext, contextToPromptBlock, CompressedContext } from '@/lib/ml/context';
+import { z } from 'zod';
+
+const SearchInputSchema = z.object({
+  query: z.string().min(1, 'Query is required').max(2000, 'Query too long'),
+  limit: z.number().int().min(1).max(20).default(5),
+});
 
 // ─── Types ────────────────────────────────────────────
 

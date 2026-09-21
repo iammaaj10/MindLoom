@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getUserSettings, updateProfile, wipeUserData, changePassword } from '@/app/actions/settings';
 import { exportUserData, type ExportFormat } from '@/app/actions/export';
+import { getMemories, addMemory, deleteMemory } from '@/app/actions/memory';
 
 export default function SettingsPage() {
   const [displayName, setDisplayName] = useState('');
@@ -24,6 +25,12 @@ export default function SettingsPage() {
   // Export
   const [isExporting, setIsExporting] = useState(false);
 
+  // AI Memory
+  const [memories, setMemoryList] = useState<any[]>([]);
+  const [newMemCat, setNewMemCat] = useState<'Preference' | 'Goal' | 'Fact'>('Fact');
+  const [newMemContent, setNewMemContent] = useState('');
+  const [isAddingMem, setIsAddingMem] = useState(false);
+
   useEffect(() => {
     async function load() {
       const res = await getUserSettings();
@@ -32,6 +39,8 @@ export default function SettingsPage() {
         setEmail(res.user.email);
         setHasCustomKey(res.user.hasCustomKey);
       }
+      const memRes = await getMemories();
+      if (memRes.success) setMemoryList(memRes.memories || []);
     }
     load();
   }, []);
@@ -264,6 +273,83 @@ export default function SettingsPage() {
             {isExporting ? 'Exporting...' : 'Export as CSV'}
           </button>
         </div>
+      </div>
+
+      {/* AI Memory */}
+      <div className="rounded-2xl p-6 bg-gradient-to-b from-white/[0.03] to-transparent border border-white/[0.08] shadow-[0_4px_25px_rgba(0,0,0,0.4)] space-y-4">
+        <h2 className="text-base font-semibold text-zinc-200 flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-zinc-400"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M12 6v6l4 2"/></svg>
+          AI Memory
+          <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/20">{memories.length} stored</span>
+        </h2>
+        <p className="text-xs text-zinc-500 leading-relaxed">
+          These memories are injected into every AI conversation so MindLoom remembers your preferences and goals across sessions.
+        </p>
+
+        {/* Add new memory */}
+        <div className="flex gap-2">
+          <select
+            value={newMemCat}
+            onChange={(e) => setNewMemCat(e.target.value as any)}
+            className="bg-white/[0.05] border border-white/[0.1] rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none"
+          >
+            <option value="Fact">Fact</option>
+            <option value="Preference">Preference</option>
+            <option value="Goal">Goal</option>
+          </select>
+          <input
+            type="text"
+            value={newMemContent}
+            onChange={(e) => setNewMemContent(e.target.value)}
+            placeholder="e.g. I prefer concise answers"
+            maxLength={500}
+            className="flex-1 bg-white/[0.05] border border-white/[0.1] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500/50 transition-all"
+          />
+          <button
+            disabled={isAddingMem || !newMemContent.trim()}
+            onClick={async () => {
+              setIsAddingMem(true);
+              const res = await addMemory(newMemCat, newMemContent.trim());
+              if (res.success) {
+                setNewMemContent('');
+                const memRes = await getMemories();
+                if (memRes.success) setMemoryList(memRes.memories || []);
+              }
+              setIsAddingMem(false);
+            }}
+            className="px-4 py-2 rounded-lg bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/25 transition-all text-xs font-semibold disabled:opacity-40"
+          >
+            {isAddingMem ? '...' : 'Add'}
+          </button>
+        </div>
+
+        {/* Memory list */}
+        {memories.length > 0 && (
+          <div className="space-y-1.5 max-h-60 overflow-y-auto custom-scrollbar">
+            {memories.map((mem: any) => (
+              <div key={mem._id} className="flex items-center justify-between px-3 py-2 bg-white/[0.02] border border-white/[0.05] rounded-lg group">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase border shrink-0 ${
+                    mem.category === 'Preference' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20' :
+                    mem.category === 'Goal' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                    'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                  }`}>{mem.category}</span>
+                  <span className="text-xs text-zinc-300 truncate">{mem.content}</span>
+                </div>
+                <button
+                  onClick={async () => {
+                    await deleteMemory(mem._id);
+                    const memRes = await getMemories();
+                    if (memRes.success) setMemoryList(memRes.memories || []);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-500/10 rounded text-zinc-500 hover:text-rose-400 transition-all shrink-0"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Danger Zone */}

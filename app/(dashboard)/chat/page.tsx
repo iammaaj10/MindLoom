@@ -233,7 +233,7 @@ export default function ChatPage() {
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantId
-            ? { ...m, content: '⚠️ Service temporarily unavailable.', isStreaming: false }
+            ? { ...m, content: m.content + '\n\n⚠️ **Stream interrupted.** The response may be incomplete. Please send your message again to retry.', isStreaming: false }
             : m
         )
       );

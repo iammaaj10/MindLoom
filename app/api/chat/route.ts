@@ -9,6 +9,7 @@ import ChatMessage from '@/lib/db/models/chat-history';
 import ChatSession from '@/lib/db/models/chat-session';
 import Memory from '@/lib/db/models/memory';
 import AuditLog from '@/lib/db/models/audit-log';
+import { rateLimit } from '@/lib/security/rate-limit';
 import { z } from 'zod';
 
 export const runtime = 'nodejs';
@@ -27,6 +28,15 @@ export async function POST(request: NextRequest) {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
     });
+  }
+
+  // Rate limit: 30 requests per minute per user
+  const { allowed, remaining, resetMs } = rateLimit(session.userId, 30, 60_000);
+  if (!allowed) {
+    return new Response(
+      JSON.stringify({ error: `Rate limited. Try again in ${Math.ceil(resetMs / 1000)}s.` }),
+      { status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': String(Math.ceil(resetMs / 1000)) } }
+    );
   }
 
   // Validate input
