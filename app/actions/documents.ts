@@ -10,6 +10,7 @@ import { chunkText } from '@/lib/ingestion/chunker';
 import { generateEmbeddings, extractEntities } from '@/lib/ml/client';
 import { extractGraphEntities } from '@/lib/ai/gemini';
 import { GraphNode, GraphEdge } from '@/lib/db/models/graph';
+import { ingestionQueue, ingestionWorker } from '@/lib/queue/ingestion-queue';
 import { revalidatePath } from 'next/cache';
 import { cache } from 'react';
 
@@ -87,97 +88,65 @@ export async function uploadDocument(
       status: 'processing',
       chunkCount: 0,
     });
-
-    try {
-      // 3. Extract text
-      const extractedText = await extractText(fileUrl, fileType);
-      
-      // 4. Chunk text
-      const chunks = chunkText(extractedText);
-      
-      // 4.5. Generate embeddings + extract entities in parallel
-      const texts = chunks.map(c => c.text);
-      let embeddings: number[][] = [];
-      let entities: string[][] = [];
-      if (texts.length > 0) {
-        [embeddings, entities] = await Promise.all([
-          generateEmbeddings(texts),
-          extractEntities(texts),
-        ]);
-      }
-
-      // 5. Save chunks to MongoDB
-      if (chunks.length > 0) {
-        const chunkDocuments = chunks.map((c, index) => ({
-          documentId: newDoc._id,
-          userId: session.userId,
-          content: c.text,
-          embedding: embeddings[index] || [],
-          metadata: {
-            topic: category,
-            entities: entities[index] || [],
-            chunkIndex: c.index,
-          },
-        }));
-        
-        await Chunk.insertMany(chunkDocuments);
-      }
-
-      // 5.5 Extract Graph Knowledge (Graph RAG)
+      // 3. Attempt to add to BullMQ queue for async processing
       try {
-        const fullText = extractedText.slice(0, 15000); // Avoid massive token counts
-        const graphData = await extractGraphEntities(fullText, session.userId);
+        await ingestionQueue.add('processDocument', {
+          documentId: newDoc._id.toString(),
+          userId: session.userId,
+          fileUrl,
+          fileType
+        });
+        console.log(`[Upload] Added document ${newDoc._id} to ingestion queue`);
+      } catch (queueErr) {
+        // Fallback: If Redis is not available locally, process synchronously
+        console.warn('[Upload] Redis unavailable, falling back to synchronous processing...', queueErr);
         
-        if (graphData && graphData.nodes && graphData.edges) {
-          const nodeMap = new Map();
-          
-          for (const node of graphData.nodes) {
+        // This is a naive async call that won't block the request response completely
+        setTimeout(async () => {
+          try {
+            const extractedText = await extractText(fileUrl, fileType);
+            const chunks = chunkText(extractedText);
+            
+            const texts = chunks.map(c => c.text);
+            let embeddings: number[][] = [];
+            let mlEntities: string[][] = [];
+
             try {
-              const allowedTypes = ['Person', 'Organization', 'Location', 'Technology', 'Concept', 'Other'];
-              const safeType = allowedTypes.includes(node.type) ? node.type : 'Other';
-              
-              const dbNode = await GraphNode.findOneAndUpdate(
-                { name: node.name, userId: session.userId },
-                { $setOnInsert: { type: safeType, description: node.description } },
-                { upsert: true, new: true }
-              );
-              nodeMap.set(node.name, dbNode._id);
-            } catch (err) {
-              console.error('GraphNode insert failed:', err);
+              const mlResult = await Promise.all([
+                generateEmbeddings(texts),
+                extractEntities(texts)
+              ]);
+              embeddings = mlResult[0];
+              mlEntities = mlResult[1];
+            } catch (err: any) {
+              embeddings = new Array(texts.length).fill([]);
+              mlEntities = new Array(texts.length).fill([]);
             }
-          }
 
-          for (const edge of graphData.edges) {
-            const sourceId = nodeMap.get(edge.source);
-            const targetId = nodeMap.get(edge.target);
-            if (sourceId && targetId) {
-              try {
-                await GraphEdge.findOneAndUpdate(
-                  { sourceId, targetId, relationship: edge.relationship, userId: session.userId },
-                  { $inc: { weight: 1 } },
-                  { upsert: true }
-                );
-              } catch (err) {
-                console.error('GraphEdge insert failed:', err);
-              }
-            }
+            const chunkDocs = chunks.map((chunk, i) => ({
+              userId: session.userId,
+              documentId: newDoc._id,
+              content: chunk.text,
+              embedding: embeddings[i] || [],
+              metadata: {
+                chunkIndex: i,
+                topic: category,
+                entities: mlEntities[i] || [],
+              },
+            }));
+            await Chunk.insertMany(chunkDocs);
+            
+            await DocumentModel.findByIdAndUpdate(newDoc._id, {
+              status: 'embedded',
+              chunkCount: chunks.length,
+            });
+            console.log(`[Upload-Fallback] Successfully processed ${newDoc._id}`);
+          } catch (syncErr) {
+            console.error(`[Upload-Fallback] Failed to process ${newDoc._id}`, syncErr);
+            await DocumentModel.findByIdAndUpdate(newDoc._id, { status: 'failed' });
           }
-        }
-      } catch (err) {
-        console.error('Graph extraction error:', err);
+        }, 0);
       }
-
-      // 6. Update Document status
-      newDoc.rawText = extractedText;
-      newDoc.chunkCount = chunks.length;
-      newDoc.status = 'embedded'; // Ready for embedding or already processed
-      await newDoc.save();
-    } catch (processError) {
-      console.error('Processing failed for doc:', newDoc._id, processError);
-      newDoc.status = 'failed';
-      await newDoc.save();
-      return { error: 'File uploaded but extraction/chunking failed. See logs.' };
-    }
 
     revalidatePath('/documents');
     return { success: true };

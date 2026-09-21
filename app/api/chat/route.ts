@@ -8,6 +8,7 @@ import dbConnect from '@/lib/db/connection';
 import ChatMessage from '@/lib/db/models/chat-history';
 import ChatSession from '@/lib/db/models/chat-session';
 import Memory from '@/lib/db/models/memory';
+import AuditLog from '@/lib/db/models/audit-log';
 import { z } from 'zod';
 
 export const runtime = 'nodejs';
@@ -89,6 +90,15 @@ export async function POST(request: NextRequest) {
       source: 'local',
       tokensUsed: 0,
       latencyMs,
+    });
+
+    // Write to Telemetry
+    await AuditLog.create({
+      userId: session.userId,
+      eventType: 'query',
+      source: 'local',
+      latencyMs,
+      tokensUsed: 0,
     });
 
     // Return as a simple JSON response with source metadata
@@ -180,8 +190,8 @@ export async function POST(request: NextRequest) {
             )
           );
 
-          // Save the full response to DB (fire-and-forget)
-          ChatMessage.create({
+          // Save to chat history
+          await ChatMessage.create({
             userId: session.userId,
             sessionId: activeSessionId,
             role: 'assistant',
@@ -189,7 +199,17 @@ export async function POST(request: NextRequest) {
             source: 'gemini',
             tokensUsed: 0,
             latencyMs,
-          }).catch((err) => console.error('[Chat] Failed to save response:', err));
+          });
+
+          // Write to Telemetry
+          await AuditLog.create({
+            userId: session.userId,
+            eventType: 'query',
+            source: 'gemini',
+            latencyMs,
+            tokensUsed: Math.round(fullText.length / 4), // Rough estimate
+            metadata: { chunkCount: searchResults.length }
+          });
 
           controller.close();
         } catch (err) {

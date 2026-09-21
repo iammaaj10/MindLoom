@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { getKnowledgeGraph } from '@/app/actions/graph';
+import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import { getKnowledgeGraph, getNodeDetails } from '@/app/actions/graph';
 import dynamic from 'next/dynamic';
 import { useTheme } from '@/components/theme/theme-provider';
 import * as THREE from 'three';
@@ -13,6 +13,9 @@ const ForceGraph3D = dynamic(() => import('react-force-graph-3d'), { ssr: false 
 export default function KnowledgeGraphPage() {
   const [graphData, setGraphData] = useState<{ nodes: any[]; links: any[] }>({ nodes: [], links: [] });
   const [loading, setLoading] = useState(true);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [nodeDetails, setNodeDetails] = useState<any>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const { theme } = useTheme();
 
   useEffect(() => {
@@ -129,14 +132,23 @@ export default function KnowledgeGraphPage() {
               d3VelocityDecay={0.3}
               onNodeClick={(node: any) => {
                 // Focus camera on clicked node
-                if (fgRef.current) {
-                  const distance = 40;
-                  const distRatio = 1 + distance/Math.hypot(node.x, node.y, node.z);
-                  fgRef.current.cameraPosition(
-                    { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio },
-                    node,
-                    1500
-                  );
+                // Handle Node Click
+                const distance = 80;
+                const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
+                fgRef.current?.cameraPosition(
+                  { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio },
+                  node, // lookAt
+                  1500 // transition duration ms
+                );
+                
+                // Fetch Details
+                if (node.id) {
+                  setSelectedNodeId(node.id);
+                  setLoadingDetails(true);
+                  getNodeDetails(node.id).then(res => {
+                    if (res.success) setNodeDetails(res);
+                    setLoadingDetails(false);
+                  });
                 }
               }}
               onEngineStop={() => {
@@ -170,6 +182,91 @@ export default function KnowledgeGraphPage() {
                 </div>
               </div>
             </div>
+            {/* Sidebar for Node Details */}
+            {selectedNodeId && (
+              <div className="absolute top-0 right-0 h-full w-[360px] bg-black/60 backdrop-blur-xl border-l border-white/10 shadow-2xl z-20 flex flex-col transition-all duration-300 animate-fade-left">
+                <div className="p-5 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
+                  <h2 className="text-[15px] font-bold text-white tracking-tight">Entity Details</h2>
+                  <button 
+                    onClick={() => setSelectedNodeId(null)}
+                    className="p-1.5 rounded-md hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
+                  {loadingDetails ? (
+                    <div className="space-y-4 animate-pulse">
+                      <div className="h-6 w-3/4 bg-white/10 rounded"></div>
+                      <div className="h-4 w-1/4 bg-white/5 rounded"></div>
+                      <div className="h-20 w-full bg-white/5 rounded-xl"></div>
+                    </div>
+                  ) : nodeDetails?.node ? (
+                    <>
+                      <div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-3 h-3 rounded-full shadow-[0_0_8px_currentColor]" style={{ color: getNodeColor(nodeDetails.node.type), backgroundColor: getNodeColor(nodeDetails.node.type) }} />
+                          <h3 className="text-xl font-black tracking-tight text-white">{nodeDetails.node.name}</h3>
+                        </div>
+                        <div className="inline-block px-2.5 py-1 rounded-md text-[10px] font-mono font-bold tracking-widest uppercase border" style={{ borderColor: getNodeColor(nodeDetails.node.type) + '40', color: getNodeColor(nodeDetails.node.type), backgroundColor: getNodeColor(nodeDetails.node.type) + '10' }}>
+                          {nodeDetails.node.type}
+                        </div>
+                      </div>
+                      
+                      {nodeDetails.node.description && (
+                        <div className="bg-white/[0.03] border border-white/10 rounded-xl p-4 text-[13px] leading-relaxed text-zinc-300 font-serif">
+                          {nodeDetails.node.description}
+                        </div>
+                      )}
+
+                      {nodeDetails.edges && nodeDetails.edges.length > 0 && (
+                        <div>
+                          <h4 className="text-[11px] font-bold tracking-widest text-zinc-500 uppercase mb-3 flex items-center gap-2">
+                            <span>Connections</span>
+                            <span className="w-5 h-5 rounded bg-white/5 flex items-center justify-center text-[10px]">{nodeDetails.edges.length}</span>
+                          </h4>
+                          <div className="space-y-2">
+                            {nodeDetails.edges.map((edge: any) => {
+                              const isSource = edge.source.id === nodeDetails.node.id;
+                              const targetEntity = isSource ? edge.target : edge.source;
+                              const relation = edge.relationship;
+                              
+                              return (
+                                <div key={edge.id} className="p-3 bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.05] rounded-lg transition-colors cursor-pointer group" onClick={() => {
+                                  setSelectedNodeId(targetEntity.id);
+                                  setLoadingDetails(true);
+                                  getNodeDetails(targetEntity.id).then(res => {
+                                    if (res.success) setNodeDetails(res);
+                                    setLoadingDetails(false);
+                                  });
+                                }}>
+                                  <div className="flex items-start gap-3">
+                                    <svg className="w-3.5 h-3.5 mt-0.5 text-zinc-500 group-hover:text-cyan-400 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      {isSource ? (
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                      ) : (
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                                      )}
+                                    </svg>
+                                    <div>
+                                      <div className="text-[10px] font-mono text-zinc-400 mb-0.5">{relation}</div>
+                                      <div className="text-sm font-semibold text-white tracking-tight">{targetEntity.name}</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-zinc-500 text-sm">Failed to load details.</div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

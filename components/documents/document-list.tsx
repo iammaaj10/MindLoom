@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useEffect, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { deleteDocument, type DocumentResult } from '@/app/actions/documents';
 import DocumentPreview from './document-preview';
 
@@ -100,6 +101,21 @@ export default function DocumentList({ documents }: { documents: DocumentResult[
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
+  // Poll for updates if any document is in a processing state
+  useEffect(() => {
+    const isProcessing = documents.some(
+      (doc) => doc.status === 'processing' || doc.status === 'uploading'
+    );
+    
+    if (isProcessing) {
+      const interval = setInterval(() => {
+        router.refresh();
+      }, 3000); // Poll every 3 seconds
+      return () => clearInterval(interval);
+    }
+  }, [documents, router]);
 
   const handleDelete = (docId: string) => {
     startTransition(async () => {
