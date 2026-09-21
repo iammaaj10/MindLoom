@@ -16,10 +16,12 @@ export default async function JournalPage() {
   await dbConnect();
   
   // Fetch recent logs
-  const logs = await Log.find({ userId: session.userId })
+  const logsRaw = await Log.find({ userId: session.userId })
     .sort({ createdAt: -1 })
     .limit(20)
     .lean();
+
+  const logs = JSON.parse(JSON.stringify(logsRaw));
 
   return (
     <div className="space-y-8 animate-fade-up">

@@ -25,9 +25,9 @@ export default function KnowledgeGraphPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const initialZoomDone = useRef(false);
 
-  useEffect(() => {
+  const fetchGraph = useCallback(() => {
+    setLoading(true);
     getKnowledgeGraph().then((data) => {
-      // Scale node sizes by connection count
       const linkCounts: Record<string, number> = {};
       data.links.forEach((link: any) => {
         const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
@@ -45,6 +45,10 @@ export default function KnowledgeGraphPage() {
       setLoading(false);
     });
   }, []);
+
+  useEffect(() => {
+    fetchGraph();
+  }, [fetchGraph]);
 
   // Responsive sizing
   useEffect(() => {
@@ -126,7 +130,7 @@ export default function KnowledgeGraphPage() {
   ];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-5.5rem)] overflow-hidden rounded-2xl border border-white/[0.06] bg-black">
+    <div className="flex flex-col h-[calc(100vh-5.5rem)] overflow-hidden rounded-2xl border border-white/[0.06] bg-[#050505] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))]">
       {/* Header */}
       <header className="h-14 flex items-center justify-between px-5 border-b border-white/[0.06] shrink-0 z-10 bg-white/[0.02]">
         <div className="flex items-center gap-3">
@@ -138,14 +142,20 @@ export default function KnowledgeGraphPage() {
           <div className="text-[11px] text-zinc-500 font-mono">
             {graphData.nodes.length} nodes • {graphData.links.length} edges
           </div>
+          <button
+            onClick={() => fetchGraph()}
+            className="px-3 py-1 text-[10px] font-mono rounded bg-white/5 hover:bg-white/10 text-zinc-300 transition-colors"
+          >
+            Refresh
+          </button>
           {graphData.nodes.length > 0 && (
             <button
               onClick={() => {
                 if (fgRef.current) {
-                  fgRef.current.zoomToFit(800, 75);
+                  fgRef.current.zoomToFit(400);
                 }
               }}
-              className="px-2.5 py-1 text-[10px] font-mono text-zinc-400 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg transition-colors"
+              className="px-3 py-1 text-[10px] font-mono rounded bg-white/5 hover:bg-white/10 text-zinc-300 transition-colors"
             >
               Reset View
             </button>
@@ -255,14 +265,19 @@ export default function KnowledgeGraphPage() {
               onNodeHover={handleNodeHover}
               onNodeClick={handleNodeClick}
               onEngineStop={() => {
-                if (fgRef.current && !initialZoomDone.current && graphData.nodes.length > 0) {
-                  fgRef.current.zoomToFit(1000, 100, () => true);
+                if (fgRef.current) {
                   const controls = fgRef.current.controls();
                   if (controls) {
                     controls.minDistance = 30;
-                    controls.maxDistance = 500;
+                    controls.maxDistance = 1500;
+                    // Switch mouse controls: Left click to pan (drag whole graph), Right click to rotate
+                    controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
+                    controls.mouseButtons.RIGHT = THREE.MOUSE.ROTATE;
                   }
-                  initialZoomDone.current = true;
+                  if (!initialZoomDone.current && graphData.nodes.length > 0) {
+                    fgRef.current.zoomToFit(1000, 100, () => true);
+                    initialZoomDone.current = true;
+                  }
                 }
               }}
             />
@@ -295,11 +310,11 @@ export default function KnowledgeGraphPage() {
             )}
 
             {/* Controls Helper */}
-            <div className="absolute bottom-4 left-4 px-3 py-2 bg-black/40 backdrop-blur-md border border-white/10 rounded-lg text-[10px] text-white/40 font-mono pointer-events-none flex gap-4">
-              <span><kbd className="px-1 py-0.5 bg-white/10 rounded text-[9px]">L-Drag</kbd> Rotate</span>
-              <span><kbd className="px-1 py-0.5 bg-white/10 rounded text-[9px]">R-Drag</kbd> Pan</span>
-              <span><kbd className="px-1 py-0.5 bg-white/10 rounded text-[9px]">Scroll</kbd> Zoom</span>
-              <span><kbd className="px-1 py-0.5 bg-white/10 rounded text-[9px]">Click</kbd> Inspect</span>
+            <div className="absolute bottom-4 left-4 px-3 py-2 bg-black/40 backdrop-blur-md border border-white/10 rounded-lg text-[10px] text-white/40 font-mono pointer-events-none flex gap-4 shadow-xl">
+              <span><kbd className="px-1 py-0.5 bg-white/10 rounded text-[9px] shadow-sm">L-Drag</kbd> Pan</span>
+              <span><kbd className="px-1 py-0.5 bg-white/10 rounded text-[9px] shadow-sm">R-Drag</kbd> Rotate</span>
+              <span><kbd className="px-1 py-0.5 bg-white/10 rounded text-[9px] shadow-sm">Scroll</kbd> Zoom</span>
+              <span><kbd className="px-1 py-0.5 bg-white/10 rounded text-[9px] shadow-sm">Click</kbd> Inspect</span>
             </div>
           </>
         )}

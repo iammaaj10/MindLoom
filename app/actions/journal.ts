@@ -4,6 +4,8 @@ import { getSession } from '@/lib/auth/session';
 import dbConnect from '@/lib/db/connection';
 import Log from '@/lib/db/models/log';
 import { extractEntities } from '@/lib/ml/client';
+import { extractGraphEntities } from '@/lib/ai/gemini';
+import { GraphNode, GraphEdge } from '@/lib/db/models/graph';
 import { revalidatePath } from 'next/cache';
 
 // Fix #8: Strip control characters and enforce length limits
@@ -50,6 +52,41 @@ export async function createJournalEntry(content: string) {
       extractedTimeSpent: [], // Could be expanded later with regex parsing for time
       date: new Date(),
     });
+
+    // Also extract rich graph relationships using Gemini and save them to the graph DB
+    try {
+      const graphData = await extractGraphEntities(sanitized, session.userId);
+      if (graphData && graphData.nodes && graphData.nodes.length > 0) {
+        const nodeMap = new Map();
+        for (const node of graphData.nodes) {
+          const created = await GraphNode.findOneAndUpdate(
+            { userId: session.userId, name: node.name },
+            { $setOnInsert: { type: node.type, description: node.description } },
+            { upsert: true, new: true }
+          );
+          nodeMap.set(node.name, created._id);
+        }
+
+        if (graphData.edges && graphData.edges.length > 0) {
+          for (const edge of graphData.edges) {
+            const sourceId = nodeMap.get(edge.source);
+            const targetId = nodeMap.get(edge.target);
+            if (sourceId && targetId) {
+              await GraphEdge.create({
+                userId: session.userId,
+                sourceId,
+                targetId,
+                relationship: edge.relationship,
+                weight: 1.0,
+                chunkIds: [],
+              });
+            }
+          }
+        }
+      }
+    } catch (graphErr) {
+      console.error('[Journal] Failed to extract graph entities:', graphErr);
+    }
 
     revalidatePath('/journal');
     revalidatePath('/dashboard');

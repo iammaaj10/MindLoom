@@ -3,7 +3,7 @@ import dbConnect from '@/lib/db/connection';
 import User from '@/lib/db/models/user';
 import { decryptValue } from '@/lib/crypto';
 
-const MODELS = ['gemini-3.6-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+const MODELS = ['gemini-3.6-flash', 'gemini-3.1-pro-preview', 'gemini-3.5-flash'];
 
 export async function getGenAI(userId?: string) {
   let apiKey = process.env.GEMINI_API_KEY;
@@ -182,61 +182,69 @@ export async function extractGraphEntities(
   text: string,
   userId?: string
 ): Promise<GraphExtractionResult | null> {
-  try {
-    const genAI = await getGenAI(userId);
-    const model = genAI.getGenerativeModel({
-      model: MODEL,
-      systemInstruction: `You are a Knowledge Graph extractor. Read the following text and extract key entities and the relationships between them. Output valid JSON adhering to the requested schema.`,
-    });
-
-    const schema: any = {
-      type: SchemaType.OBJECT,
-      properties: {
-        nodes: {
-          type: SchemaType.ARRAY,
-          items: {
-            type: SchemaType.OBJECT,
-            properties: {
-              name: { type: SchemaType.STRING, description: "The name of the entity" },
-              type: { type: SchemaType.STRING, enum: ['Person', 'Organization', 'Location', 'Technology', 'Concept', 'Other'] },
-              description: { type: SchemaType.STRING, description: "A brief 1-sentence description of the entity based on the text" }
-            },
-            required: ["name", "type", "description"]
-          }
-        },
-        edges: {
-          type: SchemaType.ARRAY,
-          items: {
-            type: SchemaType.OBJECT,
-            properties: {
-              source: { type: SchemaType.STRING, description: "The name of the source node" },
-              target: { type: SchemaType.STRING, description: "The name of the target node" },
-              relationship: { type: SchemaType.STRING, description: "A short phrase describing how they relate, e.g., 'works for', 'is built with'" }
-            },
-            required: ["source", "target", "relationship"]
-          }
+  const genAI = await getGenAI(userId);
+  const schema: any = {
+    type: SchemaType.OBJECT,
+    properties: {
+      nodes: {
+        type: SchemaType.ARRAY,
+        items: {
+          type: SchemaType.OBJECT,
+          properties: {
+            name: { type: SchemaType.STRING, description: "The name of the entity" },
+            type: { type: SchemaType.STRING, enum: ['Person', 'Organization', 'Location', 'Technology', 'Concept', 'Other'] },
+            description: { type: SchemaType.STRING, description: "A brief 1-sentence description of the entity based on the text" }
+          },
+          required: ["name", "type", "description"]
         }
       },
-      required: ["nodes", "edges"]
-    };
+      edges: {
+        type: SchemaType.ARRAY,
+        items: {
+          type: SchemaType.OBJECT,
+          properties: {
+            source: { type: SchemaType.STRING, description: "The name of the source node" },
+            target: { type: SchemaType.STRING, description: "The name of the target node" },
+            relationship: { type: SchemaType.STRING, description: "A short phrase describing how they relate, e.g., 'works for', 'is built with'" }
+          },
+          required: ["source", "target", "relationship"]
+        }
+      }
+    },
+    required: ["nodes", "edges"]
+  };
 
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text }] }],
-      generationConfig: {
-        responseMimeType: "application/json",
-        // @ts-ignore - The google SDK types might be outdated regarding responseSchema
-        responseSchema: schema,
-        temperature: 0.1,
-      },
-    });
+  for (const modelName of MODELS) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        systemInstruction: `You are a Knowledge Graph extractor. Read the following text and extract key entities and the relationships between them. Output valid JSON adhering to the requested schema.`,
+      });
 
-    let responseText = result.response.text();
-    // Clean markdown if present
-    responseText = responseText.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
-    
-    return JSON.parse(responseText) as GraphExtractionResult;
-  } catch (error) {
-    console.error('[Gemini] Graph extraction failed:', error);
-    return null;
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          // @ts-ignore
+          responseSchema: schema,
+          temperature: 0.1,
+        },
+      });
+
+      let responseText = result.response.text();
+      responseText = responseText.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
+      
+      return JSON.parse(responseText) as GraphExtractionResult;
+    } catch (error: any) {
+      if (error.status === 503 || error.status === 500 || error.status === 429 || (error.message && (error.message.includes('503') || error.message.includes('429')))) {
+        console.warn(`[Gemini] Graph extraction overloaded on ${modelName}, trying fallback...`);
+        continue;
+      }
+      console.error(`[Gemini] Graph extraction failed on ${modelName}:`, error);
+      // If it's a validation error or syntax error, just break and return null instead of retrying bad input on other models
+      break; 
+    }
   }
+
+  return null;
 }
