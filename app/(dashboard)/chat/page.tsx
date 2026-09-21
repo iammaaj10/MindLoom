@@ -124,19 +124,20 @@ export default function ChatPage() {
     loadSessions();
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading || isSubmittingRef.current) return;
+  const handleSubmit = async (e?: React.FormEvent, retryText?: string) => {
+    if (e) e.preventDefault();
+    const textToSubmit = retryText || input;
+    if (!textToSubmit.trim() || isLoading || isSubmittingRef.current) return;
 
     isSubmittingRef.current = true;
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input.trim(),
+      content: textToSubmit.trim(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInput('');
+    if (!retryText) setInput('');
     setIsLoading(true);
 
     const assistantId = (Date.now() + 1).toString();
@@ -243,6 +244,19 @@ export default function ChatPage() {
     }
   };
 
+  const handleRetry = (msgId: string) => {
+    const msgIndex = messages.findIndex(m => m.id === msgId);
+    if (msgIndex > 0) {
+      const userMsg = messages[msgIndex - 1];
+      if (userMsg.role === 'user') {
+        // Remove the failed assistant message
+        setMessages(prev => prev.filter(m => m.id !== msgId));
+        // Retry
+        handleSubmit(undefined, userMsg.content);
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)]">
       {/* ─── Header ─── */}
@@ -336,6 +350,19 @@ export default function ChatPage() {
                     {renderContentWithCitations(msg.content)}
                     {msg.isStreaming && (
                       <span className="inline-block w-2 h-4 ml-1.5 bg-indigo-500 animate-pulse rounded-sm align-middle" />
+                    )}
+                    {msg.content.includes('⚠️') && !msg.isStreaming && (
+                      <div className="mt-4">
+                        <button 
+                          onClick={() => handleRetry(msg.id)}
+                          className="px-4 py-2 rounded-xl bg-[var(--bg-root)] text-[var(--text-secondary)] border border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--text-secondary)] transition-all text-sm font-semibold flex items-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          Retry Request
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>

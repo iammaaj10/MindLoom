@@ -3,7 +3,7 @@ import dbConnect from '@/lib/db/connection';
 import User from '@/lib/db/models/user';
 import { decryptValue } from '@/lib/crypto';
 
-const MODEL = 'gemini-3.6-flash';
+const MODELS = ['gemini-3.6-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
 
 export async function getGenAI(userId?: string) {
   let apiKey = process.env.GEMINI_API_KEY;
@@ -46,49 +46,52 @@ export async function generateWithGemini(
   const start = Date.now();
   const genAI = await getGenAI(userId);
 
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      const model = genAI.getGenerativeModel({
-        model: MODEL,
-        systemInstruction: systemPrompt,
-      });
+  for (const modelName of MODELS) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          systemInstruction: systemPrompt,
+        });
 
-      const result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: userMessage }] }],
-        generationConfig: {
-          maxOutputTokens: 2048,
-          temperature: 0.7,
-          topP: 0.9,
-        },
-      });
+        const result = await model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: userMessage }] }],
+          generationConfig: {
+            maxOutputTokens: 2048,
+            temperature: 0.7,
+          },
+        });
 
-      const response = await result.response;
-      const text = response.text() || '';
-      const tokensUsed = response.usageMetadata?.totalTokenCount || 0;
+        const response = await result.response;
+        const text = response.text() || '';
+        const tokensUsed = response.usageMetadata?.totalTokenCount || 0;
 
-      return {
-        text,
-        tokensUsed,
-        latencyMs: Date.now() - start,
-      };
-    } catch (error: any) {
-      const status = error?.status || error?.httpStatusCode;
+        return {
+          text,
+          tokensUsed,
+          latencyMs: Date.now() - start,
+        };
+      } catch (error: any) {
+        if (error.status === 429) {
+          const delay = Math.pow(2, attempt) * 1000 + Math.random() * 500;
+          console.warn(`[Gemini] Rate limited on ${modelName}. Retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/${maxRetries})`);
+          await new Promise((r) => setTimeout(r, delay));
+          continue;
+        }
 
-      // Rate limited — exponential backoff
-      if (status === 429) {
-        const delay = Math.pow(2, attempt) * 1000 + Math.random() * 500;
-        console.warn(`[Gemini] Rate limited. Retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/${maxRetries})`);
-        await new Promise((r) => setTimeout(r, delay));
-        continue;
+        // If it's a 503 or 500, we should break out of retries for this model and let the outer loop try the next model.
+        if (error.status === 503 || error.status === 500 || (error.message && error.message.includes('503'))) {
+          console.warn(`[Gemini] API Overloaded on ${modelName}, trying fallback model...`);
+          break; // break the retry loop, try next model
+        }
+
+        console.error('[Gemini] API error:', error?.message || error);
+        throw error;
       }
-
-      // Non-retryable error
-      console.error('[Gemini] API error:', error?.message || error);
-      throw error;
     }
   }
 
-  throw new Error('Gemini API: max retries exceeded');
+  throw new Error('Gemini API: all models exhausted or max retries exceeded');
 }
 
 // ─── Streaming Generation ─────────────────────────────
@@ -99,34 +102,45 @@ export async function* streamWithGemini(
   userId?: string,
   history: { role: string; parts: { text: string }[] }[] = []
 ): AsyncGenerator<string, void, unknown> {
-  try {
-    const genAI = await getGenAI(userId);
-    const model = genAI.getGenerativeModel({
-      model: MODEL,
-      systemInstruction: systemPrompt,
-    });
+  const genAI = await getGenAI(userId);
+  const contents = [...history, { role: 'user', parts: [{ text: userMessage }] }];
 
-    const contents = [...history, { role: 'user', parts: [{ text: userMessage }] }];
+  for (const modelName of MODELS) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        systemInstruction: systemPrompt,
+      });
 
-    const result = await model.generateContentStream({
-      contents,
-      generationConfig: {
-        maxOutputTokens: 2048,
-        temperature: 0.7,
-        topP: 0.9,
-      },
-    });
+      const result = await model.generateContentStream({
+        contents,
+        generationConfig: {
+          maxOutputTokens: 2048,
+          temperature: 0.7,
+          topP: 0.9,
+        },
+      });
 
-    for await (const chunk of result.stream) {
-      const text = chunk.text();
-      if (text) {
-        yield text;
+      for await (const chunk of result.stream) {
+        const text = chunk.text();
+        if (text) {
+          yield text;
+        }
       }
+      return; // If stream completes successfully, exit the generator
+    } catch (error: any) {
+      if (error.status === 503 || error.status === 500 || (error.message && error.message.includes('503'))) {
+        console.warn(`[Gemini] Stream API Overloaded on ${modelName}, trying fallback model...`);
+        continue; // Try next model in MODELS array
+      }
+      console.error('[Gemini] Stream error:', error?.message || error);
+      yield '\n\n⚠️ An error occurred while generating. Please try again.';
+      return;
     }
-  } catch (error: any) {
-    console.error('[Gemini] Stream error:', error?.message || error);
-    yield '\n\n⚠️ An error occurred while generating. Please try again.';
   }
+
+  // If we exhaust all models
+  yield '\n\n⚠️ The AI models are currently experiencing high demand and are unavailable. Please try again later.';
 }
 
 // ─── System Prompt Builder ────────────────────────────
