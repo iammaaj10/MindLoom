@@ -291,11 +291,11 @@ export default function SettingsPage() {
           <select
             value={newMemCat}
             onChange={(e) => setNewMemCat(e.target.value as any)}
-            className="bg-white/[0.05] border border-white/[0.1] rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none"
+            className="bg-zinc-900 border border-white/[0.1] rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none cursor-pointer"
           >
-            <option value="Fact">Fact</option>
-            <option value="Preference">Preference</option>
-            <option value="Goal">Goal</option>
+            <option value="Fact" className="bg-zinc-900 text-white py-1">Fact</option>
+            <option value="Preference" className="bg-zinc-900 text-white py-1">Preference</option>
+            <option value="Goal" className="bg-zinc-900 text-white py-1">Goal</option>
           </select>
           <input
             type="text"
