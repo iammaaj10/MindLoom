@@ -272,22 +272,41 @@ const navSections: NavSection[] = [
   },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen = false, onClose }: { isOpen?: boolean, onClose?: () => void }) {
   const pathname = usePathname();
 
   return (
     <aside
-      className="fixed top-0 left-0 h-screen w-64 flex flex-col z-40 bg-zinc-950/95 backdrop-blur-2xl border-r border-white/[0.08] select-none"
+      className={`fixed top-0 left-0 h-screen w-64 flex flex-col z-50 bg-zinc-950/95 backdrop-blur-2xl border-r border-white/[0.08] select-none transform transition-transform duration-300 lg:translate-x-0 ${
+        isOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}
     >
       {/* ─── Top Brand Header ─── */}
       <div className="h-16 flex items-center justify-between px-5 border-b border-white/[0.08] bg-white/[0.015]">
         <Link
           href="/dashboard"
-          className="flex items-center gap-2.5 transition-opacity duration-200 hover:opacity-90"
+          onClick={onClose}
+          className="flex items-center gap-3 group"
         >
-          <MindloomLogo size={26} showWordmark showBadge />
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 to-indigo-500 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.4)] group-hover:shadow-[0_0_20px_rgba(6,182,212,0.6)] transition-all">
+            <MindloomLogo className="w-5 h-5 text-white" />
+          </div>
+          <span className="font-bold text-[15px] tracking-tight text-white group-hover:text-cyan-50 transition-colors">
+            Mindloom
+          </span>
         </Link>
+        {/* Mobile Close Button */}
+        <button 
+          onClick={onClose} 
+          className="lg:hidden p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
       </div>
+
 
       {/* ─── Navigation Links ─── */}
       <nav className="flex-1 py-4 px-3 overflow-y-auto space-y-6">
@@ -303,6 +322,7 @@ export default function Sidebar() {
                   <Link
                     key={item.href}
                     href={item.href}
+                    onClick={onClose}
                     className={`group relative flex items-center justify-between px-3 py-2 rounded-xl text-[13px] font-medium transition-all duration-200 ${
                       isActive
                         ? 'text-white bg-white/[0.08] border border-white/[0.1] shadow-[0_2px_10px_rgba(0,0,0,0.5),inset_0_1px_0_0_rgba(255,255,255,0.1)]'

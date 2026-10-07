@@ -1,8 +1,7 @@
 import { getSession } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
-import Sidebar from '@/components/layout/sidebar';
-import Topbar from '@/components/layout/topbar';
 import ErrorBoundary from '@/components/ui/error-boundary';
+import DashboardLayoutClient from '@/components/layout/dashboard-layout-client';
 
 export default async function DashboardLayout({
   children,
@@ -16,14 +15,8 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen flex bg-black text-white selection:bg-cyan-500/20 selection:text-cyan-200">
-      <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0" style={{ marginLeft: '16rem' }}>
-        <Topbar userName={session.name} />
-        <main className="flex-1 p-8 pt-22 max-w-7xl w-full mx-auto">
-          <ErrorBoundary>{children}</ErrorBoundary>
-        </main>
-      </div>
-    </div>
+    <DashboardLayoutClient userName={session.name}>
+      <ErrorBoundary>{children}</ErrorBoundary>
+    </DashboardLayoutClient>
   );
 }

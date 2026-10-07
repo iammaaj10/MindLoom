@@ -14,21 +14,32 @@ const pageTitles: Record<string, string> = {
   '/privacy': 'Privacy',
 };
 
-export default function Topbar({ userName }: { userName: string }) {
+export default function Topbar({ userName, onMenuToggle }: { userName: string, onMenuToggle?: () => void }) {
   const pathname = usePathname();
   const pageTitle = pageTitles[pathname] || 'Dashboard';
 
   return (
-    <header
-      className="fixed top-0 right-0 h-16 flex items-center justify-between px-8 z-30 bg-zinc-950/80 backdrop-blur-xl border-b border-white/[0.08]"
-      style={{
-        left: '16rem', /* matches sidebar w-64 */
-      }}
-    >
-      {/* Left: Breadcrumb */}
-      <div className="flex items-center gap-2.5">
-        <span className="text-xs font-mono uppercase tracking-wider text-zinc-500">Mindloom</span>
-        <span className="text-zinc-600 text-xs">/</span>
+    <header className="fixed top-0 right-0 h-16 flex items-center justify-between px-4 sm:px-8 z-30 bg-zinc-950/80 backdrop-blur-xl border-b border-white/[0.08] left-0 lg:left-64 transition-all duration-300">
+      
+      {/* Left: Mobile Menu Toggle & Breadcrumb */}
+      <div className="flex items-center gap-2.5 sm:gap-4">
+        {/* Hamburger Menu (Mobile Only) */}
+        <button 
+          onClick={onMenuToggle}
+          className="lg:hidden p-2 -ml-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors"
+          title="Open Menu"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+
+        <div className="flex items-center gap-2 sm:gap-2.5 hidden sm:flex">
+          <span className="text-xs font-mono uppercase tracking-wider text-zinc-500">Mindloom</span>
+          <span className="text-zinc-600 text-xs">/</span>
+        </div>
         <span className="text-sm font-semibold tracking-tight text-white">
           {pageTitle}
         </span>

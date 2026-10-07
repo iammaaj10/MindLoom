@@ -277,9 +277,9 @@ export default function ChatPage() {
   return (
     <div className={isFullscreen ? "fixed inset-0 z-[100] bg-[#050505] p-4 sm:p-8 flex flex-col animate-in fade-in duration-300" : "flex flex-col h-[calc(100vh-5rem)] relative"}>
       {/* ─── Header ─── */}
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white flex items-center gap-3">
             AI Companion
             {ghostMode && (
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-white text-black tracking-widest shadow-[0_0_15px_rgba(255,255,255,0.4)] animate-pulse">
@@ -287,19 +287,30 @@ export default function ChatPage() {
               </span>
             )}
           </h1>
-          <p className="text-sm text-zinc-400 mt-1">
-            {ghostMode ? '100% Local execution. Zero cloud API calls.' : 'Dual-layer hybrid RAG chat. Queries are routed locally or to Gemini automatically.'}
+          <p className="text-xs sm:text-sm text-zinc-400 mt-1 max-w-sm sm:max-w-none">
+            {ghostMode ? '100% Local execution. Zero cloud APIs.' : 'Dual-layer hybrid RAG chat.'}
           </p>
         </div>
         
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-3 sm:gap-5 self-start sm:self-auto">
+          {/* Mobile New Chat */}
+          <button
+            onClick={handleNewChat}
+            className="md:hidden p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-zinc-400 hover:text-white transition-all"
+            title="New Chat"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+
           {/* Ghost Mode Toggle */}
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono text-zinc-500 font-bold uppercase tracking-widest hidden sm:block">Ghost Mode</span>
+            <span className="text-[10px] font-mono text-zinc-500 font-bold uppercase tracking-widest hidden lg:block">Ghost Mode</span>
             <button
               onClick={toggleGhostMode}
               title="Toggle 100% Local Execution"
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shadow-inner ${ghostMode ? 'bg-white' : 'bg-white/10 border border-white/5'}`}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shadow-inner shrink-0 ${ghostMode ? 'bg-white' : 'bg-white/10 border border-white/5'}`}
             >
               <span className={`inline-block h-4 w-4 transform rounded-full bg-black transition-transform ${ghostMode ? 'translate-x-6' : 'translate-x-1'}`} />
             </button>
@@ -311,7 +322,7 @@ export default function ChatPage() {
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
             title={isFullscreen ? "Exit Fullscreen" : "Maximize Screen"}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-zinc-400 hover:text-white transition-all hover:scale-105 active:scale-95"
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-zinc-400 hover:text-white transition-all hover:scale-105 active:scale-95 shrink-0"
           >
             {isFullscreen ? (
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
@@ -325,7 +336,7 @@ export default function ChatPage() {
       <div className="flex-1 flex gap-6 min-h-0">
         
         {/* ─── Sidebar (History) ─── */}
-        <div className="w-64 flex flex-col gap-4 border-r border-[var(--border)] pr-4">
+        <div className="hidden md:flex w-64 flex-col gap-4 border-r border-[var(--border)] pr-4">
           <button 
             onClick={handleNewChat}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[var(--text-primary)] text-[var(--bg-root)] hover:opacity-90 transition-all text-sm font-semibold shadow-md active:scale-95"
