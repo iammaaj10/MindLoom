@@ -9,6 +9,7 @@ type Message = {
   content: string;
   source?: 'local' | 'gemini';
   isStreaming?: boolean;
+  graphEdges?: any[];
 };
 
 type Session = {
@@ -201,7 +202,7 @@ export default function ChatPage() {
                 source = data.source;
                 setMessages((prev) =>
                   prev.map((m) =>
-                    m.id === assistantId ? { ...m, source: data.source } : m
+                    m.id === assistantId ? { ...m, source: data.source, graphEdges: data.graphEdges } : m
                   )
                 );
                 if (data.sessionId && activeSessionId !== data.sessionId) {
@@ -332,17 +333,49 @@ export default function ChatPage() {
                 >
                   {/* Source Badge (for AI) */}
                   {msg.role === 'assistant' && msg.source && (
-                    <div className="flex items-center mb-3">
-                      <span
-                        className={`text-[9px] uppercase tracking-wider font-mono px-2 py-0.5 rounded-full flex items-center gap-1.5 ${
-                          msg.source === 'local'
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                            : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
-                        }`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${msg.source === 'local' ? 'bg-emerald-400' : 'bg-indigo-400'}`} />
-                        {msg.source === 'local' ? 'Retrieved via Local Engine' : 'Synthesized by Cortex Ultra'}
-                      </span>
+                    <div className="flex flex-col gap-3 mb-4">
+                      <div className="flex items-center">
+                        <span
+                          className={`text-[9px] uppercase tracking-wider font-mono px-2 py-0.5 rounded-full flex items-center gap-1.5 ${
+                            msg.source === 'local'
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                              : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                          }`}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${msg.source === 'local' ? 'bg-emerald-400' : 'bg-indigo-400'}`} />
+                          {msg.source === 'local' ? 'Retrieved via Local Engine' : 'Synthesized by Cortex Ultra'}
+                        </span>
+                      </div>
+
+                      {/* GraphRAG Traversal Badge */}
+                      {msg.graphEdges && msg.graphEdges.length > 0 && (
+                        <div className="bg-fuchsia-500/10 border border-fuchsia-500/20 rounded-xl p-3 max-w-sm text-fuchsia-400 shadow-[0_0_15px_rgba(217,70,239,0.1)]">
+                          <div className="flex items-center gap-2 mb-2 text-[10px] font-semibold uppercase tracking-widest font-mono">
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <circle cx="18" cy="5" r="3"></circle>
+                              <circle cx="6" cy="12" r="3"></circle>
+                              <circle cx="18" cy="19" r="3"></circle>
+                              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                            </svg>
+                            GraphRAG Engine Activated
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {msg.graphEdges.slice(0, 3).map((edge, idx) => (
+                              <div key={idx} className="flex items-center gap-1.5 text-[10px] font-mono bg-fuchsia-500/10 px-2 py-1 rounded-md border border-fuchsia-500/20">
+                                <span className="font-bold">{edge.source}</span>
+                                <span className="text-fuchsia-500/60">→</span >
+                                <span className="font-bold">{edge.target}</span>
+                              </div>
+                            ))}
+                            {msg.graphEdges.length > 3 && (
+                              <div className="text-[10px] font-mono text-fuchsia-400/60 self-center">
+                                +{msg.graphEdges.length - 3} more paths
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 

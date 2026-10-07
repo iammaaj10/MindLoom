@@ -155,7 +155,7 @@ async function inMemorySearch(
 export async function searchGraph(
   userId: string,
   queryText: string
-): Promise<string> {
+): Promise<{ contextString: string, edges: any[] }> {
   await dbConnect();
 
   try {
@@ -166,7 +166,7 @@ export async function searchGraph(
     // Clean up entity prefixes like "ENTITY:", "TECH:" from Python ML service
     const rawEntities = extracted.map(e => e.includes(':') ? e.split(':')[1] : e);
     
-    if (rawEntities.length === 0) return '';
+    if (rawEntities.length === 0) return { contextString: '', edges: [] };
 
     // 2. Find matching nodes in the database
     // Use regex for case-insensitive matching
@@ -176,7 +176,7 @@ export async function searchGraph(
       name: { $in: regexes }
     }).lean();
 
-    if (nodes.length === 0) return '';
+    if (nodes.length === 0) return { contextString: '', edges: [] };
 
     const nodeIds = nodes.map(n => n._id);
 
@@ -191,7 +191,7 @@ export async function searchGraph(
       .limit(20)
       .lean();
 
-    if (edges.length === 0) return '';
+    if (edges.length === 0) return { contextString: '', edges: [] };
 
     // 4. Construct the Graph Context string
     let graphContext = "### Knowledge Graph Relationships:\n";
@@ -201,10 +201,10 @@ export async function searchGraph(
       graphContext += `- ${sourceName} ${edge.relationship} ${targetName} (Confidence: ${edge.weight})\n`;
     });
 
-    return graphContext;
+    return { contextString: graphContext, edges };
   } catch (err) {
     console.error('[GraphRAG] Search failed:', err);
-    return '';
+    return { contextString: '', edges: [] };
   }
 }
 

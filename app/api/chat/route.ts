@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
   // 3b. Gemini RAG path — stream the response
   try {
     // Retrieve context
-    const [searchResults, graphContextString] = await Promise.all([
+    const [searchResults, graphData] = await Promise.all([
       searchChunks(session.userId, message, 5),
       searchGraph(session.userId, message)
     ]);
@@ -138,8 +138,8 @@ export async function POST(request: NextRequest) {
     let promptBlock = contextToPromptBlock(context);
     
     // Inject Graph Context
-    if (graphContextString) {
-      promptBlock = `${graphContextString}\n\n${promptBlock}`;
+    if (graphData.contextString) {
+      promptBlock = `${graphData.contextString}\n\n${promptBlock}`;
     }
 
     // Fetch last 5 messages for conversational history
@@ -173,10 +173,20 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // Send source metadata first, including activeSessionId
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ type: 'meta', source: 'gemini', chunksUsed: searchResults.length, sessionId: activeSessionId })}\n\n`
+              `data: ${JSON.stringify({ 
+                type: 'meta', 
+                source: 'gemini', 
+                chunksUsed: searchResults.length, 
+                sessionId: activeSessionId,
+                graphEdges: graphData.edges.map(e => ({
+                  source: e.sourceId?.name || 'Unknown',
+                  target: e.targetId?.name || 'Unknown',
+                  relationship: e.relationship,
+                  weight: e.weight
+                }))
+              })}\n\n`
             )
           );
 
