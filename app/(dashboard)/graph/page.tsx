@@ -20,10 +20,85 @@ export default function KnowledgeGraphPage() {
   const [highlightLinks, setHighlightLinks] = useState<Set<any>>(new Set());
   const [hoverNode, setHoverNode] = useState<any>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+  
+  // Node Chat State
+  const [nodeChatInput, setNodeChatInput] = useState('');
+  const [nodeChatHistory, setNodeChatHistory] = useState<{id: string, role: 'user'|'assistant', content: string, isStreaming?: boolean}[]>([]);
+  const [isNodeChatLoading, setIsNodeChatLoading] = useState(false);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+
   const { theme } = useTheme();
   const fgRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const initialZoomDone = useRef(false);
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [nodeChatHistory]);
+
+  const handleNodeChatSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nodeChatInput.trim() || isNodeChatLoading || !nodeDetails?.node) return;
+
+    const query = nodeChatInput.trim();
+    setNodeChatInput('');
+    setNodeChatHistory(prev => [...prev, { id: crypto.randomUUID(), role: 'user', content: query }]);
+    setIsNodeChatLoading(true);
+    
+    const assistantId = crypto.randomUUID();
+    setNodeChatHistory(prev => [...prev, { id: assistantId, role: 'assistant', content: '', isStreaming: true }]);
+
+    try {
+      const enhancedQuery = `Context: The user is currently inspecting the Knowledge Graph node for "${nodeDetails.node.name}" (${nodeDetails.node.type}).\n\nUser Question: ${query}`;
+      
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: enhancedQuery })
+      });
+
+      if (!res.ok) throw new Error('Network error');
+
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await res.json();
+        setNodeChatHistory(prev => prev.map(m => m.id === assistantId ? { ...m, content: data.text, isStreaming: false } : m));
+        setIsNodeChatLoading(false);
+        return;
+      }
+
+      if (!res.body) throw new Error('No stream');
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.replace('data: ', ''));
+              if (data.type === 'text') {
+                setNodeChatHistory(prev => prev.map(m => m.id === assistantId ? { ...m, content: m.content + data.text } : m));
+              } else if (data.type === 'done') {
+                setNodeChatHistory(prev => prev.map(m => m.id === assistantId ? { ...m, isStreaming: false } : m));
+              }
+            } catch (err) {}
+          }
+        }
+      }
+    } catch (error) {
+      setNodeChatHistory(prev => prev.map(m => m.id === assistantId ? { ...m, content: m.content + '\n\n*(Error connecting to AI)*', isStreaming: false } : m));
+    } finally {
+      setIsNodeChatLoading(false);
+    }
+  };
 
   const fetchGraph = useCallback(() => {
     setLoading(true);
@@ -114,6 +189,8 @@ export default function KnowledgeGraphPage() {
       setSelectedNodeId(node.id);
       setLoadingDetails(true);
       setNodeDetails(null);
+      setNodeChatHistory([]);
+      setNodeChatInput('');
       getNodeDetails(node.id).then(res => {
         if (res.success) setNodeDetails(res);
         setLoadingDetails(false);
@@ -404,6 +481,56 @@ export default function KnowledgeGraphPage() {
                       </div>
                     </div>
                   )}
+
+                  {/* ─── Chat with Node Mini-App ─── */}
+                  <div className="mt-8 border-t border-white/10 pt-4 flex flex-col h-[350px]">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                      <h4 className="text-[11px] font-bold tracking-widest text-indigo-400 uppercase">Chat with Node</h4>
+                    </div>
+                    
+                    <div ref={chatScrollRef} className="flex-1 overflow-y-auto space-y-4 mb-3 pr-2 custom-scrollbar">
+                      {nodeChatHistory.length === 0 ? (
+                        <div className="text-[11px] text-zinc-500 italic text-center mt-10">
+                          Ask a question about {nodeDetails.node.name}. Cortex Ultra will answer using your graph context.
+                        </div>
+                      ) : (
+                        nodeChatHistory.map(msg => (
+                          <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[85%] p-2.5 rounded-xl text-[12px] leading-relaxed ${
+                              msg.role === 'user' 
+                                ? 'bg-indigo-500/20 text-indigo-100 border border-indigo-500/30 rounded-tr-sm' 
+                                : 'bg-white/[0.03] text-zinc-200 border border-white/10 rounded-tl-sm'
+                            }`}>
+                              <span className="whitespace-pre-wrap">{msg.content}</span>
+                              {msg.isStreaming && <span className="inline-block w-1.5 h-3 ml-1 bg-indigo-400 animate-pulse align-middle" />}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    <form onSubmit={handleNodeChatSubmit} className="relative shrink-0">
+                      <input 
+                        type="text"
+                        value={nodeChatInput}
+                        onChange={e => setNodeChatInput(e.target.value)}
+                        placeholder="Ask about this entity..."
+                        disabled={isNodeChatLoading}
+                        className="w-full bg-black/50 border border-white/10 focus:border-indigo-500/50 rounded-xl pl-3 pr-10 py-2.5 text-[12px] text-white placeholder-zinc-500 focus:outline-none transition-all disabled:opacity-50"
+                      />
+                      <button 
+                        type="submit"
+                        disabled={!nodeChatInput.trim() || isNodeChatLoading}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-all disabled:opacity-30"
+                      >
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <line x1="22" y1="2" x2="11" y2="13" />
+                          <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                        </svg>
+                      </button>
+                    </form>
+                  </div>
                 </>
               ) : (
                 <div className="text-zinc-500 text-xs">Could not load entity details.</div>
