@@ -4,6 +4,7 @@ import { classifyIntent } from '@/lib/ai/router';
 import { streamWithGemini, buildSystemPrompt } from '@/lib/ai/gemini';
 import { searchChunks, searchGraph } from '@/lib/ml/retrieval';
 import { buildContext, contextToPromptBlock } from '@/lib/ml/context';
+import { addXP } from '@/app/actions/skills';
 import dbConnect from '@/lib/db/connection';
 import ChatMessage from '@/lib/db/models/chat-history';
 import ChatSession from '@/lib/db/models/chat-session';
@@ -189,6 +190,20 @@ export async function POST(request: NextRequest) {
     // Inject Graph Context
     if (graphData.contextString) {
       promptBlock = `${graphData.contextString}\n\n${promptBlock}`;
+      
+      // GAMIFICATION: Award XP asynchronously for interacting with these topics
+      if (graphData.edges && graphData.edges.length > 0) {
+        // Extract unique entity types from edges
+        const types = new Set<string>();
+        graphData.edges.forEach((edge: any) => {
+          const topic = edge.source ? String(edge.source).split(' ')[0] : 'General Knowledge';
+          types.add(topic);
+        });
+        
+        types.forEach(topic => {
+          addXP(topic, 10).catch(err => console.error("XP Error:", err));
+        });
+      }
     }
 
     // Fetch last 5 messages for conversational history

@@ -126,111 +126,95 @@ export default function DocumentList({ documents }: { documents: DocumentResult[
 
   if (documents.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-white/[0.1] p-12 text-center bg-zinc-950/40">
-        <div className="w-14 h-14 rounded-2xl mx-auto mb-4 flex items-center justify-center bg-white/[0.03] border border-white/[0.08] text-zinc-500 shadow-inner">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <div className="rounded-3xl border border-white/[0.05] p-12 text-center bg-white/[0.01] backdrop-blur-xl">
+        <div className="w-16 h-16 rounded-full mx-auto mb-5 flex items-center justify-center bg-white/[0.02] border border-white/10 shadow-inner">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-zinc-500">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
             <polyline points="14 2 14 8 20 8" />
           </svg>
         </div>
-        <h3 className="text-sm font-semibold text-zinc-200 mb-1">
+        <h3 className="text-base font-medium text-white mb-2 tracking-tight">
           No knowledge documents yet
         </h3>
-        <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-          Upload your notes, PDFs, or resume above to populate your vector database chunks.
+        <p className="text-sm text-zinc-500 max-w-sm mx-auto leading-relaxed">
+          Upload your notes, PDFs, or research above to populate your vector database.
         </p>
       </div>
     );
   }
 
   const grid = (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="flex flex-col gap-3">
       {documents.map((doc, i) => (
         <div
           key={doc._id}
-          className="group relative rounded-2xl p-5 bg-gradient-to-b from-white/[0.04] to-white/[0.015] border border-white/[0.08] hover:border-white/[0.2] transition-all duration-300 shadow-[0_4px_20px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)] flex flex-col justify-between"
+          className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white/[0.01] hover:bg-white/[0.03] border border-transparent hover:border-white/[0.06] transition-all duration-300"
           style={{ animationDelay: `${i * 40}ms` }}
         >
-          {/* Top row: Icon + Title + Action */}
-          <div>
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <FileTypeIcon type={doc.fileType} />
-
-              <div className="relative shrink-0">
-                {confirmId === doc._id ? (
-                  <div className="flex items-center gap-1.5 animate-fade-up">
-                    <button
-                      onClick={() => handleDelete(doc._id)}
-                      disabled={isPending}
-                      className="text-[11px] font-medium px-2.5 py-1 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 transition-colors cursor-pointer"
-                    >
-                      {isPending ? '...' : 'Confirm'}
-                    </button>
-                    <button
-                      onClick={() => setConfirmId(null)}
-                      className="text-[11px] font-medium px-2 py-1 rounded-md text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setConfirmId(doc._id)}
-                    title="Delete document"
-                    className="p-1.5 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
-                  >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
-                  </button>
-                )}
+          <div className="flex items-center gap-4">
+            <FileTypeIcon type={doc.fileType} />
+            <div>
+              <h3
+                className="text-[15px] font-medium text-white mb-1 truncate max-w-[200px] sm:max-w-[300px] tracking-tight"
+                title={doc.title}
+              >
+                {doc.title}
+              </h3>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+                  {doc.category} • {formatDate(doc.createdAt)}
+                </span>
+                <span className="text-zinc-600">•</span>
+                <span className="text-[10px] font-mono text-cyan-500/70 uppercase tracking-widest">
+                  {doc.chunkCount} Chunks
+                </span>
               </div>
-            </div>
-
-            {/* Document Title */}
-            <h3
-              className="text-sm font-semibold text-zinc-100 mb-2 truncate tracking-tight"
-              title={doc.title}
-            >
-              {doc.title}
-            </h3>
-
-            {/* Category and Status */}
-            <div className="flex items-center gap-2 flex-wrap mb-4">
-              <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-md bg-white/[0.04] text-zinc-400 border border-white/[0.06] uppercase tracking-wider">
-                {doc.category}
-              </span>
-              <StatusBadge status={doc.status} />
             </div>
           </div>
 
-          {/* Preview Button */}
-          <button
-            onClick={() => setPreviewId(doc._id)}
-            className="absolute bottom-5 right-5 p-2 rounded-lg text-zinc-500 hover:text-cyan-400 hover:bg-cyan-500/10 opacity-0 group-hover:opacity-100 transition-all"
-            title="Preview document"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-4">
+            <StatusBadge status={doc.status} />
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPreviewId(doc._id)}
+                className="p-2 rounded-xl text-zinc-500 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
+                title="Preview document"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
 
-          {/* Bottom row: Chunks + Date */}
-          <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] text-xs">
-            <span className="text-zinc-500 text-[11px] font-mono">
-              {formatDate(doc.createdAt)}
-            </span>
-
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 font-mono text-[11px] font-medium">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="7" height="7" rx="1" />
-                <rect x="14" y="3" width="7" height="7" rx="1" />
-                <rect x="3" y="14" width="7" height="7" rx="1" />
-                <rect x="14" y="14" width="7" height="7" rx="1" />
-              </svg>
-              <span>{doc.chunkCount} {doc.chunkCount === 1 ? 'chunk' : 'chunks'}</span>
+              {confirmId === doc._id ? (
+                <div className="flex items-center gap-2 animate-fade-up">
+                  <button
+                    onClick={() => handleDelete(doc._id)}
+                    disabled={isPending}
+                    className="text-[11px] font-medium px-3 py-1.5 rounded-lg bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 transition-colors"
+                  >
+                    {isPending ? '...' : 'Confirm'}
+                  </button>
+                  <button
+                    onClick={() => setConfirmId(null)}
+                    className="text-[11px] font-medium px-3 py-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/[0.06] transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmId(doc._id)}
+                  title="Delete document"
+                  className="p-2 rounded-xl text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         </div>
