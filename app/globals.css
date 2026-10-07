@@ -26,75 +26,25 @@
   --radius-lg: 12px;
 }
 
-/* B2: Light theme using color inversion to cleanly map dark-mode utilities */
-[data-theme="light"] body {
-  background-color: #f8f9fa !important;
-  color: #111 !important;
+/* ─── Premium Light Theme (Smart Inversion) ─── */
+/* We invert the entire document to flip black to white, and hue-rotate 180deg so accent colors (Cyan, Indigo) retain their exact original hues. Alpha channels are preserved, so all glassmorphism translates perfectly to light mode. */
+html[data-theme="light"] {
+  filter: invert(1) hue-rotate(180deg);
+  background-color: #000; /* Pre-inversion bg color to ensure smooth transition */
 }
 
-[data-theme="light"] {
-  --bg-root: #f8f9fa;
-  --bg-surface: #ffffff;
-  --bg-elevated: #f0f1f3;
-  --bg-input: #ffffff;
-  --text-primary: #111111;
-  --text-secondary: #52525b;
-  --text-tertiary: #71717a;
-  --border: #e4e4e7;
-  --border-hover: #d4d4d8;
-  --accent: #111111;
-  --accent-fg: #ffffff;
+/* Double-invert media and specific elements so they aren't color-distorted */
+html[data-theme="light"] img,
+html[data-theme="light"] video,
+html[data-theme="light"] canvas {
+  filter: invert(1) hue-rotate(180deg);
 }
 
-/* Override hardcoded dark mode utilities in light mode */
-[data-theme="light"] [class*="bg-black"],
-[data-theme="light"] [class*="bg-zinc-950"],
-[data-theme="light"] [class*="bg-zinc-900"] {
-  background-color: var(--bg-root) !important;
+/* Fix some specific backgrounds that might look off when inverted */
+html[data-theme="light"] .bg-black {
+  background-color: #050505 !important;
 }
 
-[data-theme="light"] [class*="text-white"],
-[data-theme="light"] [class*="text-zinc-100"],
-[data-theme="light"] [class*="text-zinc-200"],
-[data-theme="light"] [class*="text-zinc-300"] {
-  color: var(--text-primary) !important;
-}
-
-[data-theme="light"] .text-zinc-400,
-[data-theme="light"] .text-zinc-500 {
-  color: var(--text-secondary) !important;
-}
-
-[data-theme="light"] [class*="border-white"] {
-  border-color: rgba(0, 0, 0, 0.1) !important;
-}
-
-[data-theme="light"] [class*="bg-white/"] {
-  background-color: rgba(0, 0, 0, 0.04) !important;
-}
-
-[data-theme="light"] .bg-white {
-  background-color: #111 !important;
-  color: #fff !important;
-}
-
-[data-theme="light"] .bg-white:hover {
-  background-color: #333 !important;
-}
-
-[data-theme="light"] [class*="from-white"][class*="via-cyan-200"][class*="to-indigo-300"] {
-  background-image: linear-gradient(to right, #111, #0284c7, #4f46e5) !important;
-}
-
-[data-theme="light"] [class*="from-white/"] {
-  --tw-gradient-from: rgba(0, 0, 0, 0.02) var(--tw-gradient-from-position);
-  --tw-gradient-to: rgba(0, 0, 0, 0.05) var(--tw-gradient-to-position);
-  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
-}
-
-[data-theme="light"] [class*="shadow-[0_4px_25px_rgba"] {
-  box-shadow: 0 4px 25px rgba(0,0,0,0.05) !important;
-}
 
 @theme inline {
   --color-background: var(--bg-root);

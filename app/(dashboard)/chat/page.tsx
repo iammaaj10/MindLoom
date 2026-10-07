@@ -336,10 +336,10 @@ export default function ChatPage() {
       <div className="flex-1 flex gap-6 min-h-0">
         
         {/* ─── Sidebar (History) ─── */}
-        <div className="hidden md:flex w-64 flex-col gap-4 border-r border-[var(--border)] pr-4">
+        <div className="hidden md:flex w-64 flex-col gap-4 border-r border-white/[0.08] pr-4">
           <button 
             onClick={handleNewChat}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[var(--text-primary)] text-[var(--bg-root)] hover:opacity-90 transition-all text-sm font-semibold shadow-md active:scale-95"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-white hover:bg-white/90 text-black transition-all text-sm font-semibold shadow-[0_0_15px_rgba(255,255,255,0.2)] active:scale-95"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
@@ -352,14 +352,14 @@ export default function ChatPage() {
               <div 
                 key={s._id}
                 onClick={() => handleSelectSession(s._id)}
-                className={`group flex items-center justify-between px-4 py-3 rounded-xl transition-all cursor-pointer ${activeSessionId === s._id ? 'bg-[var(--bg-elevated)] border border-[var(--border)] shadow-sm' : 'bg-transparent border border-transparent hover:bg-[var(--bg-elevated)]/50'}`}
+                className={`group flex items-center justify-between px-4 py-3 rounded-xl transition-all cursor-pointer ${activeSessionId === s._id ? 'bg-white/[0.08] border border-white/[0.1] shadow-sm' : 'bg-transparent border border-transparent hover:bg-white/[0.04]'}`}
               >
-                <div className={`truncate text-sm font-medium ${activeSessionId === s._id ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)]'}`}>
+                <div className={`truncate text-sm font-medium ${activeSessionId === s._id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
                   {s.title}
                 </div>
                 <button 
                   onClick={(e) => handleDeleteSession(e, s._id)}
-                  className="opacity-0 group-hover:opacity-100 p-1.5 text-[var(--text-secondary)] hover:text-red-500 hover:bg-red-500/10 rounded-md transition-all"
+                  className="opacity-0 group-hover:opacity-100 p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-md transition-all"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 </button>
@@ -369,17 +369,17 @@ export default function ChatPage() {
         </div>
 
         {/* ─── Chat Window ─── */}
-        <div className="flex-1 flex flex-col bg-[var(--bg-surface)] border border-[var(--border)] rounded-3xl overflow-hidden shadow-2xl relative">
+        <div className="flex-1 flex flex-col bg-white/[0.02] backdrop-blur-xl border border-white/[0.08] rounded-3xl overflow-hidden shadow-2xl relative">
         <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 custom-scrollbar relative z-10">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 rounded-3xl bg-[var(--bg-elevated)] border border-[var(--border)] flex items-center justify-center mb-6 shadow-sm">
-                <svg className="w-10 h-10 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <div className="w-20 h-20 rounded-3xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mb-6 shadow-inner">
+                <svg className="w-10 h-10 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
               </div>
-              <h2 className="text-xl font-semibold text-[var(--text-primary)]">How can I help you today?</h2>
-              <p className="text-sm text-[var(--text-secondary)] mt-2 max-w-md leading-relaxed">
+              <h2 className="text-xl font-semibold text-white">How can I help you today?</h2>
+              <p className="text-sm text-zinc-400 mt-2 max-w-md leading-relaxed">
                 Try asking "Summarize my documents" to test the Local Router, or a complex synthesis question to test Cortex Ultra.
               </p>
             </div>
@@ -392,8 +392,8 @@ export default function ChatPage() {
                 <div
                   className={`max-w-[85%] rounded-3xl px-6 py-4 ${
                     msg.role === 'user'
-                      ? 'bg-[var(--text-primary)] text-[var(--bg-root)] rounded-tr-sm shadow-md'
-                      : 'bg-[var(--bg-elevated)] border border-[var(--border)] text-[var(--text-primary)] rounded-tl-sm shadow-sm'
+                      ? 'bg-white text-black rounded-tr-sm shadow-[0_0_15px_rgba(255,255,255,0.1)]'
+                      : 'bg-white/[0.04] border border-white/[0.08] text-zinc-200 rounded-tl-sm shadow-sm'
                   }`}
                 >
                   {/* Source Badge (for AI) */}
@@ -471,9 +471,9 @@ export default function ChatPage() {
         </div>
 
         {/* Input Area */}
-        <div className="p-6 bg-gradient-to-t from-[var(--bg-surface)] pt-4 border-t border-transparent">
+        <div className="p-6 bg-gradient-to-t from-black/20 via-transparent to-transparent pt-4 border-t border-transparent">
           <form onSubmit={handleSubmit} className="relative flex items-end max-w-4xl mx-auto">
-            <div className="relative w-full bg-[var(--bg-elevated)] border border-[var(--border)] focus-within:border-indigo-500/50 focus-within:ring-4 focus-within:ring-indigo-500/10 rounded-2xl transition-all shadow-sm">
+            <div className="relative w-full bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] focus-within:border-cyan-500/50 focus-within:ring-4 focus-within:ring-cyan-500/10 rounded-2xl transition-all shadow-sm">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -484,14 +484,14 @@ export default function ChatPage() {
                   }
                 }}
                 placeholder="Message Mindloom..."
-                className="w-full bg-transparent pl-5 pr-14 py-4 min-h-[60px] max-h-[200px] resize-none text-[15px] text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none"
+                className="w-full bg-transparent pl-5 pr-14 py-4 min-h-[60px] max-h-[200px] resize-none text-[15px] text-white placeholder-zinc-500 focus:outline-none"
                 rows={1}
                 disabled={isLoading}
               />
               <button
                 type="submit"
                 disabled={!input.trim() || isLoading}
-                className="absolute right-3 bottom-3 p-2 rounded-xl bg-[var(--text-primary)] text-[var(--bg-root)] hover:opacity-90 disabled:opacity-30 disabled:hover:opacity-30 transition-all shadow-md active:scale-95"
+                className="absolute right-3 bottom-3 p-2 rounded-xl bg-white hover:bg-zinc-200 text-black disabled:opacity-30 disabled:hover:opacity-30 transition-all shadow-md active:scale-95"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="22" y1="2" x2="11" y2="13" />
@@ -501,7 +501,7 @@ export default function ChatPage() {
             </div>
           </form>
           <div className="text-center mt-3">
-            <span className="text-[11px] text-[var(--text-tertiary)] font-medium">
+            <span className="text-[11px] text-zinc-600 font-medium tracking-wider">
               MindLoom Cortex Ultra Hybrid Engine • AI can make mistakes.
             </span>
           </div>
@@ -513,29 +513,29 @@ export default function ChatPage() {
       {selectedCitationId && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6" onClick={() => setSelectedCitationId(null)}>
           <div 
-            className="w-full max-w-lg bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+            className="w-full max-w-lg bg-zinc-950/90 backdrop-blur-2xl border border-white/[0.08] rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col"
             onClick={e => e.stopPropagation()}
           >
-            <div className="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--bg-elevated)]">
-              <h3 className="text-sm font-semibold text-[var(--text-primary)] uppercase tracking-wider font-mono">Source Citation</h3>
-              <button onClick={() => setSelectedCitationId(null)} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+            <div className="px-6 py-4 border-b border-white/[0.08] flex items-center justify-between bg-white/[0.02]">
+              <h3 className="text-sm font-semibold text-white uppercase tracking-wider font-mono">Source Citation</h3>
+              <button onClick={() => setSelectedCitationId(null)} className="text-zinc-500 hover:text-white transition-colors">
                 ✕
               </button>
             </div>
-            <div className="p-6 overflow-y-auto max-h-[60vh] custom-scrollbar text-[var(--text-primary)] text-sm leading-relaxed whitespace-pre-wrap">
+            <div className="p-6 overflow-y-auto max-h-[60vh] custom-scrollbar text-white text-sm leading-relaxed whitespace-pre-wrap">
               {isCitationLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : citationContent ? (
                 <>
                   {citationContextMsg && (
-                    <div className="mb-6 pb-4 border-b border-[var(--border)]">
-                      <div className="text-[11px] font-bold tracking-wider text-[var(--text-tertiary)] uppercase mb-2">Cited for:</div>
-                      <div className="text-[14px] text-[var(--text-secondary)] italic">"{citationContextMsg}"</div>
+                    <div className="mb-6 pb-4 border-b border-white/[0.06]">
+                      <div className="text-[11px] font-bold tracking-wider text-zinc-500 uppercase mb-2">Cited for:</div>
+                      <div className="text-[14px] text-zinc-400 italic">"{citationContextMsg}"</div>
                     </div>
                   )}
-                  <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-xs font-mono text-indigo-400">
+                  <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-xs font-mono text-cyan-400">
                     <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                       <polyline points="14 2 14 8 20 8" />
@@ -545,12 +545,12 @@ export default function ChatPage() {
                     </svg>
                     {citationContent.documentTitle || citationContent.documentId}
                   </div>
-                  <div className="bg-[var(--bg-root)] border border-[var(--border)] rounded-xl p-4 text-[13.5px] leading-relaxed text-[var(--text-secondary)] font-serif shadow-inner">
+                  <div className="bg-black/40 border border-white/[0.04] rounded-xl p-4 text-[13.5px] leading-relaxed text-zinc-300 font-serif shadow-inner">
                     {citationContent.content}
                   </div>
                 </>
               ) : (
-                <div className="text-red-400">Failed to load citation content.</div>
+                <div className="text-rose-400">Failed to load citation content.</div>
               )}
             </div>
           </div>
