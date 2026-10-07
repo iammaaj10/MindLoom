@@ -19,6 +19,7 @@ export const dynamic = 'force-dynamic';
 const ChatInputSchema = z.object({
   message: z.string().min(1, 'Message is required').max(10000, 'Message too long'),
   sessionId: z.string().max(100).optional(),
+  ghostMode: z.boolean().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const { message, sessionId } = body;
+  const { message, sessionId, ghostMode } = body;
 
   const startTime = Date.now();
   await dbConnect();
@@ -84,10 +85,58 @@ export async function POST(request: NextRequest) {
     latencyMs: 0,
   });
 
-  // 2. Run the intent classifier / router
+  // 2. Ghost Mode Execution (100% Local, Zero Cloud APIs)
+  if (ghostMode) {
+    const searchResults = await searchChunks(session.userId, message, 3);
+    const latencyMs = Date.now() - startTime;
+    
+    let fallbackAnswer = `👻 **Ghost Mode Active.** Your query was executed 100% locally.`;
+    
+    if (searchResults.length > 0) {
+      fallbackAnswer += `\n\nHere are the most relevant extracts from your local knowledge base:\n\n${searchResults
+        .map(
+          (r, i) =>
+            `**[${i + 1}]** *(${r.metadata.topic}, confidence: ${(r.score * 100).toFixed(0)}%)*\n${r.content.substring(0, 400)}${r.content.length > 400 ? '…' : ''}`
+        )
+        .join('\n\n')}`;
+    } else {
+      fallbackAnswer += `\n\nI couldn't find any relevant local documents matching your query.`;
+    }
+
+    await ChatMessage.create({
+      userId: session.userId,
+      sessionId: activeSessionId,
+      role: 'assistant',
+      content: fallbackAnswer,
+      source: 'local',
+      tokensUsed: 0,
+      latencyMs,
+    });
+
+    await AuditLog.create({
+      userId: session.userId,
+      eventType: 'query',
+      source: 'local',
+      latencyMs,
+      tokensUsed: 0,
+    });
+
+    return new Response(
+      JSON.stringify({
+        text: fallbackAnswer,
+        source: 'local',
+        latencyMs,
+        tokensUsed: 0,
+        sessionId: activeSessionId,
+      }),
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // 3. Run the intent classifier / router
   const decision = await classifyIntent(message, session.userId);
 
-  // 3a. If answered locally, return immediately (no streaming needed)
+  // 4a. If answered locally, return immediately (no streaming needed)
   if (decision.source === 'local' && decision.localAnswer) {
     const latencyMs = Date.now() - startTime;
 
@@ -126,7 +175,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 3b. Gemini RAG path — stream the response
+  // 4b. Gemini RAG path — stream the response
   try {
     // Retrieve context
     const [searchResults, graphData] = await Promise.all([

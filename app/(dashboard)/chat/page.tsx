@@ -24,6 +24,9 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [ghostMode, setGhostMode] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isSubmittingRef = useRef(false); // Fix A2: Guard against double-submit
   
@@ -39,6 +42,18 @@ export default function ChatPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Load Ghost Mode preference
+  useEffect(() => {
+    const stored = localStorage.getItem('ghostMode');
+    if (stored) setGhostMode(stored === 'true');
+  }, []);
+
+  const toggleGhostMode = () => {
+    const newState = !ghostMode;
+    setGhostMode(newState);
+    localStorage.setItem('ghostMode', String(newState));
+  };
 
   const handleCitationClick = async (chunkId: string, contextSentence: string) => {
     setSelectedCitationId(chunkId);
@@ -153,7 +168,8 @@ export default function ChatPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           message: userMessage.content,
-          sessionId: activeSessionId || 'default'
+          sessionId: activeSessionId || 'default',
+          ghostMode
         }),
       });
 
@@ -259,13 +275,51 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-5rem)]">
+    <div className={isFullscreen ? "fixed inset-0 z-[100] bg-[#050505] p-4 sm:p-8 flex flex-col animate-in fade-in duration-300" : "flex flex-col h-[calc(100vh-5rem)] relative"}>
       {/* ─── Header ─── */}
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold tracking-tight text-white">AI Companion</h1>
-        <p className="text-sm text-zinc-400 mt-1">
-          Dual-layer hybrid RAG chat. Queries are routed locally or to Gemini automatically.
-        </p>
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-3">
+            AI Companion
+            {ghostMode && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-white text-black tracking-widest shadow-[0_0_15px_rgba(255,255,255,0.4)] animate-pulse">
+                GHOST MODE
+              </span>
+            )}
+          </h1>
+          <p className="text-sm text-zinc-400 mt-1">
+            {ghostMode ? '100% Local execution. Zero cloud API calls.' : 'Dual-layer hybrid RAG chat. Queries are routed locally or to Gemini automatically.'}
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-5">
+          {/* Ghost Mode Toggle */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono text-zinc-500 font-bold uppercase tracking-widest hidden sm:block">Ghost Mode</span>
+            <button
+              onClick={toggleGhostMode}
+              title="Toggle 100% Local Execution"
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors shadow-inner ${ghostMode ? 'bg-white' : 'bg-white/10 border border-white/5'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-black transition-transform ${ghostMode ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+          </div>
+          
+          <div className="w-px h-6 bg-white/10 hidden sm:block"></div>
+
+          {/* Fullscreen Toggle */}
+          <button
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            title={isFullscreen ? "Exit Fullscreen" : "Maximize Screen"}
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-zinc-400 hover:text-white transition-all hover:scale-105 active:scale-95"
+          >
+            {isFullscreen ? (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 flex gap-6 min-h-0">
@@ -304,8 +358,8 @@ export default function ChatPage() {
         </div>
 
         {/* ─── Chat Window ─── */}
-        <div className="flex-1 flex flex-col bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl overflow-hidden shadow-sm relative">
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 custom-scrollbar">
+        <div className="flex-1 flex flex-col bg-[var(--bg-surface)] border border-[var(--border)] rounded-3xl overflow-hidden shadow-2xl relative">
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 custom-scrollbar relative z-10">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center">
               <div className="w-20 h-20 rounded-3xl bg-[var(--bg-elevated)] border border-[var(--border)] flex items-center justify-center mb-6 shadow-sm">

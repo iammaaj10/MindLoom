@@ -20,6 +20,7 @@ export default function KnowledgeGraphPage() {
   const [highlightLinks, setHighlightLinks] = useState<Set<any>>(new Set());
   const [hoverNode, setHoverNode] = useState<any>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   // Node Chat State
   const [nodeChatInput, setNodeChatInput] = useState('');
@@ -207,7 +208,7 @@ export default function KnowledgeGraphPage() {
   ];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-5.5rem)] overflow-hidden rounded-2xl border border-white/[0.06] bg-[#050505] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))]">
+    <div className={`flex flex-col overflow-hidden bg-[#050505] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))] transition-all ${isFullscreen ? "fixed inset-0 z-[100] rounded-none border-none animate-in fade-in duration-300" : "h-[calc(100vh-5.5rem)] rounded-2xl border border-white/[0.06]"}`}>
       {/* Header */}
       <header className="h-14 flex items-center justify-between px-5 border-b border-white/[0.06] shrink-0 z-10 bg-white/[0.02]">
         <div className="flex items-center gap-3">
@@ -216,7 +217,7 @@ export default function KnowledgeGraphPage() {
           <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/20">3D</span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="text-[11px] text-zinc-500 font-mono">
+          <div className="text-[11px] text-zinc-500 font-mono hidden sm:block">
             {graphData.nodes.length} nodes • {graphData.links.length} edges
           </div>
           <button
@@ -237,6 +238,21 @@ export default function KnowledgeGraphPage() {
               Reset View
             </button>
           )}
+
+          <div className="w-px h-4 bg-white/10 hidden sm:block mx-1"></div>
+
+          {/* Fullscreen Toggle */}
+          <button
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            title={isFullscreen ? "Exit Fullscreen" : "Maximize Screen"}
+            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white transition-all"
+          >
+            {isFullscreen ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+            )}
+          </button>
         </div>
       </header>
 
