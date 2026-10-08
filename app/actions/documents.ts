@@ -10,7 +10,6 @@ import { chunkText } from '@/lib/ingestion/chunker';
 import { generateEmbeddings, extractEntities } from '@/lib/ml/client';
 import { extractGraphEntities } from '@/lib/ai/gemini';
 import { GraphNode, GraphEdge } from '@/lib/db/models/graph';
-import { ingestionQueue, ingestionWorker } from '@/lib/queue/ingestion-queue';
 import { revalidatePath } from 'next/cache';
 import { cache } from 'react';
 import { z } from 'zod';
@@ -125,64 +124,52 @@ export async function uploadDocument(
       status: 'processing',
       chunkCount: 0,
     });
-      // 3. Attempt to add to BullMQ queue for async processing
+      // 3. Process the document natively (No Redis required)
+      console.log(`[Upload] Processing document ${newDoc._id} synchronously...`);
       try {
-        await ingestionQueue.add('processDocument', {
-          documentId: newDoc._id.toString(),
-          userId: session.userId,
-          fileUrl,
-          fileType
-        });
-        console.log(`[Upload] Added document ${newDoc._id} to ingestion queue`);
-      } catch (queueErr) {
-        // Fallback: If Redis is not available locally, process synchronously
-        console.warn('[Upload] Redis unavailable, falling back to synchronous processing...', queueErr);
+        const extractedText = await extractText(fileUrl, fileType);
+        const chunks = chunkText(extractedText);
         
-        // This is a naive async call that won't block the request response completely
-        setTimeout(async () => {
-          try {
-            const extractedText = await extractText(fileUrl, fileType);
-            const chunks = chunkText(extractedText);
-            
-            const texts = chunks.map(c => c.text);
-            let embeddings: number[][] = [];
-            let mlEntities: string[][] = [];
+        const texts = chunks.map(c => c.text);
+        let embeddings: number[][] = [];
+        let mlEntities: string[][] = [];
 
-            try {
-              const mlResult = await Promise.all([
-                generateEmbeddings(texts),
-                extractEntities(texts)
-              ]);
-              embeddings = mlResult[0];
-              mlEntities = mlResult[1];
-            } catch (err: any) {
-              embeddings = new Array(texts.length).fill([]);
-              mlEntities = new Array(texts.length).fill([]);
-            }
+        // Generate Embeddings and Extract Entities using local ML service
+        try {
+          const mlResult = await Promise.all([
+            generateEmbeddings(texts),
+            extractEntities(texts)
+          ]);
+          embeddings = mlResult[0];
+          mlEntities = mlResult[1];
+        } catch (err: any) {
+          console.warn(`[Upload] Local ML service failed, falling back to empty embeddings.`, err);
+          embeddings = new Array(texts.length).fill([]);
+          mlEntities = new Array(texts.length).fill([]);
+        }
 
-            const chunkDocs = chunks.map((chunk, i) => ({
-              userId: session.userId,
-              documentId: newDoc._id,
-              content: chunk.text,
-              embedding: embeddings[i] || [],
-              metadata: {
-                chunkIndex: i,
-                topic: category,
-                entities: mlEntities[i] || [],
-              },
-            }));
-            await Chunk.insertMany(chunkDocs);
-            
-            await DocumentModel.findByIdAndUpdate(newDoc._id, {
-              status: 'embedded',
-              chunkCount: chunks.length,
-            });
-            console.log(`[Upload-Fallback] Successfully processed ${newDoc._id}`);
-          } catch (syncErr) {
-            console.error(`[Upload-Fallback] Failed to process ${newDoc._id}`, syncErr);
-            await DocumentModel.findByIdAndUpdate(newDoc._id, { status: 'failed' });
-          }
-        }, 0);
+        // Save Chunks to MongoDB
+        const chunkDocs = chunks.map((chunk, i) => ({
+          userId: session.userId,
+          documentId: newDoc._id,
+          content: chunk.text,
+          embedding: embeddings[i] || [],
+          metadata: {
+            chunkIndex: i,
+            topic: category,
+            entities: mlEntities[i] || [],
+          },
+        }));
+        await Chunk.insertMany(chunkDocs);
+        
+        await DocumentModel.findByIdAndUpdate(newDoc._id, {
+          status: 'embedded',
+          chunkCount: chunks.length,
+        });
+        console.log(`[Upload] Successfully processed ${newDoc._id}`);
+      } catch (processingErr) {
+        console.error(`[Upload] Failed to process ${newDoc._id}`, processingErr);
+        await DocumentModel.findByIdAndUpdate(newDoc._id, { status: 'failed' });
       }
 
     revalidatePath('/documents');
