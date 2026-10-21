@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from typing import List, Optional
+from functools import lru_cache
 import time
 import re
 import os
@@ -11,9 +12,25 @@ import torch
 from sentence_transformers import SentenceTransformer
 from contextlib import asynccontextmanager
 
+# Constrain PyTorch thread overhead to prevent massive memory allocations on shared host vCPUs
+torch.set_num_threads(1)
+if hasattr(torch, "set_num_interop_threads"):
+    try:
+        torch.set_num_interop_threads(1)
+    except RuntimeError:
+        pass
+
 MODEL_NAME = "all-MiniLM-L6-v2"
-model = None
-device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+DEVICE_OVERRIDE = os.getenv("DEVICE", "cpu").lower()
+device = "cuda" if DEVICE_OVERRIDE == "cuda" and torch.cuda.is_available() else "cpu"
+
+@lru_cache(maxsize=1)
+def get_model() -> SentenceTransformer:
+    """Lazy-load the embedding model on first demand to avoid startup memory spikes."""
+    print(f"Loading {MODEL_NAME} on {device} (threads={torch.get_num_threads()})...")
+    loaded_model = SentenceTransformer(MODEL_NAME, device=device)
+    print("Model loaded successfully.")
+    return loaded_model
 
 # ─── Common words to exclude from entity extraction ───
 STOP_WORDS = {
@@ -35,22 +52,28 @@ STOP_WORDS = {
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global model
-    print(f"Loading {MODEL_NAME} on {device}...")
-    model = SentenceTransformer(MODEL_NAME, device=device)
-    print("Model loaded successfully.")
+    print("FastAPI application started. Model will load lazily on first request.")
     yield
-    model = None
+    get_model.cache_clear()
 
 app = FastAPI(title="MindLoom Local ML Service", lifespan=lifespan)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+cors_origins_env = os.getenv("CORS_ORIGINS", "*")
+if cors_origins_env == "*":
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[origin.strip() for origin in cors_origins_env.split(",") if origin.strip()],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 # Fix #6: API key authentication
 ML_API_KEY = os.getenv("ML_SERVICE_API_KEY", "mindloom-dev-secret")
@@ -152,23 +175,28 @@ def extract_entities_from_text(text: str) -> List[str]:
 
 @app.get("/health")
 def health_check():
+    is_loaded = get_model.cache_info().currsize > 0
     return {
         "status": "healthy",
         "model": MODEL_NAME,
         "device": device,
-        "model_loaded": model is not None
+        "model_loaded": is_loaded
     }
 
 @app.post("/embed", response_model=EmbedResponse)
 def embed_texts(request: EmbedRequest):
-    if model is None:
-        raise HTTPException(status_code=503, detail="Model is not loaded")
-
     if not request.texts:
         return {"embeddings": [], "dimension": 384, "latency_ms": 0}
 
     start_time = time.time()
-    embeddings = model.encode(request.texts, convert_to_numpy=True).tolist()
+    try:
+        loaded_model = get_model()
+        with torch.no_grad():
+            embeddings = loaded_model.encode(request.texts, convert_to_numpy=True).tolist()
+    except Exception as e:
+        print(f"Error generating embeddings: {e}")
+        raise HTTPException(status_code=500, detail=f"Embedding error: {str(e)}")
+
     latency_ms = (time.time() - start_time) * 1000
 
     return {
