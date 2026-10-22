@@ -55,13 +55,13 @@ export async function semanticSearch(
     const promptBlock = contextToPromptBlock(context);
 
     return { results, context, promptBlock };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Semantic search failed:', error);
     return {
       results: [],
       context: { query, timestamp: '', chunks: [], entities: [], summary: '' },
       promptBlock: '',
-      error: 'Search failed. Please try again.',
+      error: error?.message || 'Search failed. Please try again.',
     };
   }
 }

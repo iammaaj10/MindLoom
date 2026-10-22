@@ -18,18 +18,20 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
       method: 'POST',
       headers: ML_HEADERS,
       body: JSON.stringify({ texts }),
-      signal: AbortSignal.timeout(25000),
+      // Render free-tier instances sleep when inactive and may need up to 40s to wake up
+      signal: AbortSignal.timeout(40000),
     });
 
     if (!res.ok) {
-      console.error(`ML Service Error: ${res.status} ${res.statusText}`);
+      const errDetail = await res.text().catch(() => '');
+      console.error(`ML Service Error [POST ${ML_SERVICE_URL}/embed]: ${res.status} ${res.statusText} - ${errDetail}`);
       return texts.map(() => []);
     }
 
     const data = await res.json();
     return data.embeddings;
-  } catch (error) {
-    console.error('Failed to connect to ML Service:', error);
+  } catch (error: any) {
+    console.error(`Failed to connect to ML Service at ${ML_SERVICE_URL}:`, error?.message || error);
     return texts.map(() => []);
   }
 }
@@ -44,18 +46,18 @@ export async function extractEntities(texts: string[]): Promise<string[][]> {
       method: 'POST',
       headers: ML_HEADERS,
       body: JSON.stringify({ texts }),
-      signal: AbortSignal.timeout(25000),
+      signal: AbortSignal.timeout(40000),
     });
 
     if (!res.ok) {
-      console.error(`Entity Extraction Error: ${res.status} ${res.statusText}`);
+      console.error(`Entity Extraction Error [POST ${ML_SERVICE_URL}/extract_entities]: ${res.status} ${res.statusText}`);
       return texts.map(() => []);
     }
 
     const data = await res.json();
     return data.entities;
   } catch (error) {
-    console.error('Failed to extract entities:', error);
+    console.error(`Failed to extract entities at ${ML_SERVICE_URL}:`, error);
     return texts.map(() => []);
   }
 }
@@ -67,41 +69,37 @@ export async function embedQuery(text: string): Promise<number[]> {
   return results[0] || [];
 }
 
-// ─── Vector Similarity ────────────────────────────────
+// ─── Vector Cosine Similarity ─────────────────────────
+
+export function cosineSimilarity(a: number[], b: number[]): number {
+  if (!a || !b || a.length === 0 || b.length === 0) return 0;
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+  const len = Math.min(a.length, b.length);
+  for (let i = 0; i < len; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  const denom = Math.sqrt(normA) * Math.sqrt(normB);
+  return denom === 0 ? 0 : dot / denom;
+}
 
 export async function calculateSimilarity(
   queryEmbedding: number[],
   candidateEmbeddings: number[][],
   topK: number = 5
 ): Promise<{ scores: number[]; rankedIndices: number[] }> {
-  if (candidateEmbeddings.length === 0) {
+  if (candidateEmbeddings.length === 0 || queryEmbedding.length === 0) {
     return { scores: [], rankedIndices: [] };
   }
 
-  try {
-    const res = await fetch(`${ML_SERVICE_URL}/similarity`, {
-      method: 'POST',
-      headers: ML_HEADERS,
-      body: JSON.stringify({
-        query_embedding: queryEmbedding,
-        candidate_embeddings: candidateEmbeddings,
-        top_k: topK,
-      }),
-      signal: AbortSignal.timeout(25000),
-    });
+  // Fast, instant in-memory calculation (0.1ms vs 2000ms network round-trip)
+  const scores = candidateEmbeddings.map((candidate) => cosineSimilarity(queryEmbedding, candidate));
+  const rankedIndices = Array.from({ length: scores.length }, (_, i) => i)
+    .sort((a, b) => scores[b] - scores[a])
+    .slice(0, topK);
 
-    if (!res.ok) {
-      console.error(`Similarity Error: ${res.status} ${res.statusText}`);
-      return { scores: [], rankedIndices: [] };
-    }
-
-    const data = await res.json();
-    return {
-      scores: data.scores,
-      rankedIndices: data.ranked_indices,
-    };
-  } catch (error) {
-    console.error('Failed to calculate similarity:', error);
-    return { scores: [], rankedIndices: [] };
-  }
+  return { scores, rankedIndices };
 }
