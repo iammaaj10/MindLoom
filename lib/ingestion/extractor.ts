@@ -2,20 +2,28 @@ import fs from 'fs';
 import path from 'path';
 import { extractText as extractPdfText } from 'unpdf';
 
+const UPLOAD_BASE = path.join(process.cwd(), 'public');
+
 /**
  * Extracts raw text from a given file buffer or path.
+ * In production/serverless, passing a Buffer directly avoids disk I/O.
  */
 export async function extractText(
-  filePath: string,
+  source: string | Buffer,
   fileType: 'pdf' | 'image' | 'text'
 ): Promise<string> {
-  const absolutePath = path.join(process.cwd(), 'public', filePath);
+  let fileBuffer: Buffer;
 
-  if (!fs.existsSync(absolutePath)) {
-    throw new Error(`File not found: ${absolutePath}`);
+  if (Buffer.isBuffer(source)) {
+    fileBuffer = source;
+  } else {
+    const cleanPath = source.replace(/^[/\\]+/, '');
+    const absolutePath = path.join(UPLOAD_BASE, cleanPath);
+    if (!fs.existsSync(absolutePath)) {
+      throw new Error(`File not found: ${source}`);
+    }
+    fileBuffer = fs.readFileSync(absolutePath);
   }
-
-  const fileBuffer = fs.readFileSync(absolutePath);
 
   switch (fileType) {
     case 'pdf':
@@ -23,7 +31,7 @@ export async function extractText(
     case 'text':
       return extractFromText(fileBuffer);
     case 'image':
-      // Placeholder for Day 6 stretch goal: OCR
+      // Placeholder for OCR
       return '[OCR Extraction Pending] Image text extraction will be implemented with Tesseract.';
     default:
       throw new Error(`Unsupported file type for extraction: ${fileType}`);

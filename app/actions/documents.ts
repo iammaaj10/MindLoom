@@ -108,9 +108,12 @@ export async function uploadDocument(
   }
 
   try {
-    // 1. Save to disk
-    const { fileUrl } = await saveFile(session.userId, file);
+    const fileBytes = await file.arrayBuffer();
+    const fileBuffer = Buffer.from(fileBytes);
     const fileType = getFileType(file.name);
+
+    // 1. Save file (writes to disk if writable, skips safely on Vercel serverless)
+    const { fileUrl } = await saveFile(session.userId, file, fileBuffer);
 
     // 2. Create initial MongoDB record
     await dbConnect();
@@ -124,59 +127,61 @@ export async function uploadDocument(
       status: 'processing',
       chunkCount: 0,
     });
-      // 3. Process the document natively (No Redis required)
-      console.log(`[Upload] Processing document ${newDoc._id} synchronously...`);
+
+    // 3. Process the document natively directly from memory buffer
+    console.log(`[Upload] Processing document ${newDoc._id} synchronously...`);
+    try {
+      const extractedText = await extractText(fileBuffer, fileType);
+      const chunks = chunkText(extractedText);
+      
+      const texts = chunks.map(c => c.text);
+      let embeddings: number[][] = [];
+      let mlEntities: string[][] = [];
+
+      // Generate Embeddings and Extract Entities using ML service
       try {
-        const extractedText = await extractText(fileUrl, fileType);
-        const chunks = chunkText(extractedText);
-        
-        const texts = chunks.map(c => c.text);
-        let embeddings: number[][] = [];
-        let mlEntities: string[][] = [];
-
-        // Generate Embeddings and Extract Entities using local ML service
-        try {
-          const mlResult = await Promise.all([
-            generateEmbeddings(texts),
-            extractEntities(texts)
-          ]);
-          embeddings = mlResult[0];
-          mlEntities = mlResult[1];
-        } catch (err: any) {
-          console.warn(`[Upload] Local ML service failed, falling back to empty embeddings.`, err);
-          embeddings = new Array(texts.length).fill([]);
-          mlEntities = new Array(texts.length).fill([]);
-        }
-
-        // Save Chunks to MongoDB
-        const chunkDocs = chunks.map((chunk, i) => ({
-          userId: session.userId,
-          documentId: newDoc._id,
-          content: chunk.text,
-          embedding: embeddings[i] || [],
-          metadata: {
-            chunkIndex: i,
-            topic: category,
-            entities: mlEntities[i] || [],
-          },
-        }));
-        await Chunk.insertMany(chunkDocs);
-        
-        await DocumentModel.findByIdAndUpdate(newDoc._id, {
-          status: 'embedded',
-          chunkCount: chunks.length,
-        });
-        console.log(`[Upload] Successfully processed ${newDoc._id}`);
-      } catch (processingErr) {
-        console.error(`[Upload] Failed to process ${newDoc._id}`, processingErr);
-        await DocumentModel.findByIdAndUpdate(newDoc._id, { status: 'failed' });
+        const mlResult = await Promise.all([
+          generateEmbeddings(texts),
+          extractEntities(texts)
+        ]);
+        embeddings = mlResult[0];
+        mlEntities = mlResult[1];
+      } catch (err: any) {
+        console.warn(`[Upload] ML service failed or unreachable, falling back to empty embeddings.`, err);
+        embeddings = new Array(texts.length).fill([]);
+        mlEntities = new Array(texts.length).fill([]);
       }
+
+      // Save Chunks to MongoDB
+      const chunkDocs = chunks.map((chunk, i) => ({
+        userId: session.userId,
+        documentId: newDoc._id,
+        content: chunk.text,
+        embedding: embeddings[i] || [],
+        metadata: {
+          chunkIndex: i,
+          topic: category,
+          entities: mlEntities[i] || [],
+        },
+      }));
+      await Chunk.insertMany(chunkDocs);
+      
+      await DocumentModel.findByIdAndUpdate(newDoc._id, {
+        status: 'embedded',
+        chunkCount: chunks.length,
+        rawText: extractedText.slice(0, 5000),
+      });
+      console.log(`[Upload] Successfully processed ${newDoc._id}`);
+    } catch (processingErr) {
+      console.error(`[Upload] Failed to process ${newDoc._id}`, processingErr);
+      await DocumentModel.findByIdAndUpdate(newDoc._id, { status: 'failed' });
+    }
 
     revalidatePath('/documents');
     return { success: true };
-  } catch (err) {
+  } catch (err: any) {
     console.error('Upload failed:', err);
-    return { error: 'Upload failed. Please try again.' };
+    return { error: err?.message || 'Upload failed. Please try again.' };
   }
 }
 

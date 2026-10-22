@@ -1,4 +1,5 @@
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000';
+const RAW_ML_URL = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000';
+const ML_SERVICE_URL = RAW_ML_URL.replace(/\/+$/, '');
 const ML_API_KEY = process.env.ML_SERVICE_API_KEY || 'mindloom-dev-secret';
 
 // Common headers for all ML service requests
@@ -17,6 +18,7 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
       method: 'POST',
       headers: ML_HEADERS,
       body: JSON.stringify({ texts }),
+      signal: AbortSignal.timeout(25000),
     });
 
     if (!res.ok) {
@@ -42,6 +44,7 @@ export async function extractEntities(texts: string[]): Promise<string[][]> {
       method: 'POST',
       headers: ML_HEADERS,
       body: JSON.stringify({ texts }),
+      signal: AbortSignal.timeout(25000),
     });
 
     if (!res.ok) {
@@ -84,6 +87,7 @@ export async function calculateSimilarity(
         candidate_embeddings: candidateEmbeddings,
         top_k: topK,
       }),
+      signal: AbortSignal.timeout(25000),
     });
 
     if (!res.ok) {
