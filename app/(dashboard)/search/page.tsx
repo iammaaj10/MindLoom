@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { semanticSearch, SearchResponse } from '@/app/actions/search';
+import { toast } from '@/components/ui/toast';
 
 export default function SearchPage() {
   const [query, setQuery] = useState('');
@@ -16,6 +17,13 @@ export default function SearchPage() {
     startTransition(async () => {
       const res = await semanticSearch(query, 5);
       setResponse(res);
+      if (res.error) {
+        toast.error(res.error);
+      } else if (res.results.length === 0) {
+        toast.info('No matching chunks found in your knowledge base.');
+      } else {
+        toast.success(`Found ${res.results.length} relevant chunk${res.results.length === 1 ? '' : 's'}!`);
+      }
     });
   }
 
@@ -37,11 +45,12 @@ export default function SearchPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="e.g. What is machine learning?"
-            className="input-field pl-11 h-12 text-base"
+            className="input-field !pl-12 h-12 text-base"
+            style={{ paddingLeft: '3rem' }}
             disabled={isPending}
           />
           <svg
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-zinc-500"
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-zinc-400 pointer-events-none"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { getUserSettings, updateProfile, wipeUserData, changePassword } from '@/app/actions/settings';
 import { exportUserData, type ExportFormat } from '@/app/actions/export';
 import { getMemories, addMemory, deleteMemory } from '@/app/actions/memory';
+import { toast } from '@/components/ui/toast';
 
 export default function SettingsPage() {
   const [displayName, setDisplayName] = useState('');
@@ -46,6 +47,7 @@ export default function SettingsPage() {
   }, []);
 
   const showSuccess = (msg: string) => {
+    toast.success(msg);
     setSuccessMsg(msg);
     setErrorMsg('');
     setTimeout(() => setSuccessMsg(''), 4000);
@@ -59,6 +61,7 @@ export default function SettingsPage() {
       showSuccess('Profile updated successfully.');
       if (apiKey) setHasCustomKey(true);
     } else if (res.error) {
+      toast.error(res.error);
       setErrorMsg(res.error);
     }
     setIsSaving(false);
@@ -69,6 +72,7 @@ export default function SettingsPage() {
     setPwMsg(null);
 
     if (newPw !== confirmPw) {
+      toast.error('New passwords do not match.');
       setPwMsg({ type: 'error', text: 'New passwords do not match.' });
       return;
     }
@@ -76,11 +80,13 @@ export default function SettingsPage() {
     setIsChangingPw(true);
     const res = await changePassword(currentPw, newPw);
     if (res.success) {
+      toast.success('Password changed successfully!');
       setPwMsg({ type: 'success', text: 'Password changed successfully!' });
       setCurrentPw('');
       setNewPw('');
       setConfirmPw('');
     } else if (res.error) {
+      toast.error(res.error);
       setPwMsg({ type: 'error', text: res.error });
     }
     setIsChangingPw(false);

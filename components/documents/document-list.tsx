@@ -3,6 +3,7 @@
 import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { deleteDocument, type DocumentResult } from '@/app/actions/documents';
+import { toast } from '@/components/ui/toast';
 import DocumentPreview from './document-preview';
 
 function FileTypeIcon({ type }: { type: 'pdf' | 'image' | 'text' }) {
@@ -119,7 +120,12 @@ export default function DocumentList({ documents }: { documents: DocumentResult[
 
   const handleDelete = (docId: string) => {
     startTransition(async () => {
-      await deleteDocument(docId);
+      const res = await deleteDocument(docId);
+      if (res?.error) {
+        toast.error(res.error);
+      } else {
+        toast.success('Document deleted successfully');
+      }
       setConfirmId(null);
     });
   };

@@ -2,6 +2,7 @@
 
 import { useActionState, useRef, useState, useCallback, useEffect } from 'react';
 import { uploadDocument } from '@/app/actions/documents';
+import { toast } from '@/components/ui/toast';
 
 const categories = [
   'general',
@@ -94,10 +95,13 @@ export default function UploadForm() {
 
   useEffect(() => {
     if (state?.success) {
+      toast.success('Document uploaded and chunked successfully!');
       setSelectedFile(null);
       if (formRef.current) formRef.current.reset();
+    } else if (state?.error) {
+      toast.error(state.error);
     }
-  }, [state?.success]);
+  }, [state?.success, state?.error]);
 
   return (
     <form ref={formRef} action={action} className="space-y-4">
