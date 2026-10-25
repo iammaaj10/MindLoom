@@ -233,7 +233,7 @@ export async function extractGraphEntities(
 
       let responseText = result.response.text();
       responseText = responseText.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
-      
+
       return JSON.parse(responseText) as GraphExtractionResult;
     } catch (error: any) {
       if (error.status === 503 || error.status === 500 || error.status === 429 || (error.message && (error.message.includes('503') || error.message.includes('429')))) {
@@ -242,7 +242,7 @@ export async function extractGraphEntities(
       }
       console.error(`[Gemini] Graph extraction failed on ${modelName}:`, error);
       // If it's a validation error or syntax error, just break and return null instead of retrying bad input on other models
-      break; 
+      break;
     }
   }
 

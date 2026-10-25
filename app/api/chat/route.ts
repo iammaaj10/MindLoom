@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
   await dbConnect();
 
   let activeSessionId = sessionId;
-  
+
   // If no sessionId is provided or it's 'default', create a new session
   if (!activeSessionId || activeSessionId === 'default') {
     const newSession = await ChatSession.create({
@@ -90,9 +90,9 @@ export async function POST(request: NextRequest) {
   if (ghostMode) {
     const searchResults = await searchChunks(session.userId, message, 3);
     const latencyMs = Date.now() - startTime;
-    
+
     let fallbackAnswer = `👻 **Ghost Mode Active.** Your query was executed 100% locally.`;
-    
+
     if (searchResults.length > 0) {
       fallbackAnswer += `\n\nHere are the most relevant extracts from your local knowledge base:\n\n${searchResults
         .map(
@@ -183,14 +183,14 @@ export async function POST(request: NextRequest) {
       searchChunks(session.userId, message, 5),
       searchGraph(session.userId, message)
     ]);
-    
+
     const context = buildContext(message, searchResults);
     let promptBlock = contextToPromptBlock(context);
-    
+
     // Inject Graph Context
     if (graphData.contextString) {
       promptBlock = `${graphData.contextString}\n\n${promptBlock}`;
-      
+
       // GAMIFICATION: Award XP asynchronously for interacting with these topics
       if (graphData.edges && graphData.edges.length > 0) {
         // Extract unique entity types from edges
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
           const topic = edge.source ? String(edge.source).split(' ')[0] : 'General Knowledge';
           types.add(topic);
         });
-        
+
         types.forEach(topic => {
           addXP(topic, 10).catch(err => console.error("XP Error:", err));
         });
@@ -211,11 +211,11 @@ export async function POST(request: NextRequest) {
       .sort({ createdAt: -1 })
       .limit(6) // 5 history + the one we just saved
       .lean();
-    
+
     // Sort chronologically and exclude the current message
     recentMessages.reverse();
     const historyMsgs = recentMessages.slice(0, -1);
-    
+
     const history = historyMsgs.map((m: any) => ({
       role: m.role === 'user' ? 'user' : 'model',
       parts: [{ text: m.content }],
@@ -239,10 +239,10 @@ export async function POST(request: NextRequest) {
         try {
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ 
-                type: 'meta', 
-                source: 'gemini', 
-                chunksUsed: searchResults.length, 
+              `data: ${JSON.stringify({
+                type: 'meta',
+                source: 'gemini',
+                chunksUsed: searchResults.length,
                 sessionId: activeSessionId,
                 graphEdges: graphData.edges.map(e => ({
                   source: e.sourceId?.name || 'Unknown',

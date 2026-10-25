@@ -26,19 +26,19 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [ghostMode, setGhostMode] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isSubmittingRef = useRef(false); // Fix A2: Guard against double-submit
-  
+
   const [selectedCitationId, setSelectedCitationId] = useState<string | null>(null);
   const [citationContextMsg, setCitationContextMsg] = useState<string>('');
-  const [citationContent, setCitationContent] = useState<{content: string, documentId: string, documentTitle?: string} | null>(null);
+  const [citationContent, setCitationContent] = useState<{ content: string, documentId: string, documentTitle?: string } | null>(null);
   const [isCitationLoading, setIsCitationLoading] = useState(false);
-  
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-  
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -73,18 +73,18 @@ export default function ChatPage() {
     let lastIndex = 0;
     let match;
     let citationCount = 0;
-  
+
     while ((match = citationRegex.exec(content)) !== null) {
       const textBefore = content.slice(lastIndex, match.index);
       parts.push(textBefore);
-      
+
       // Extract the last sentence before the citation for context
       const sentences = textBefore.split(/(?<=[.!?])\s+/);
       const citedSentence = sentences[sentences.length - 1] || textBefore;
 
       citationCount++;
       const chunkId = match[1];
-      
+
       parts.push(
         <button
           key={`cite-${match.index}`}
@@ -166,7 +166,7 @@ export default function ChatPage() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           message: userMessage.content,
           sessionId: activeSessionId || 'default',
           ghostMode
@@ -176,7 +176,7 @@ export default function ChatPage() {
       if (!res.ok) throw new Error('Network response was not ok');
 
       const contentType = res.headers.get('content-type');
-      
+
       // Handle standard JSON response (Local Router)
       if (contentType && contentType.includes('application/json')) {
         const data = await res.json();
@@ -291,7 +291,7 @@ export default function ChatPage() {
             {ghostMode ? '100% Local execution. Zero cloud APIs.' : 'Dual-layer hybrid RAG chat.'}
           </p>
         </div>
-        
+
         <div className="flex items-center gap-3 sm:gap-5 self-start sm:self-auto">
           {/* Mobile New Chat */}
           <button
@@ -315,7 +315,7 @@ export default function ChatPage() {
               <span className={`inline-block h-4 w-4 transform rounded-full bg-black transition-transform ${ghostMode ? 'translate-x-6' : 'translate-x-1'}`} />
             </button>
           </div>
-          
+
           <div className="w-px h-6 bg-white/10 hidden sm:block"></div>
 
           {/* Fullscreen Toggle */}
@@ -325,19 +325,19 @@ export default function ChatPage() {
             className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-zinc-400 hover:text-white transition-all hover:scale-105 active:scale-95 shrink-0"
           >
             {isFullscreen ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3" /></svg>
             ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" /></svg>
             )}
           </button>
         </div>
       </div>
 
       <div className="flex-1 flex gap-6 min-h-0">
-        
+
         {/* ─── Sidebar (History) ─── */}
         <div className="hidden md:flex w-64 flex-col gap-4 border-r border-white/[0.08] pr-4">
-          <button 
+          <button
             onClick={handleNewChat}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-white hover:bg-white/90 text-black transition-all text-sm font-semibold shadow-[0_0_15px_rgba(255,255,255,0.2)] active:scale-95"
           >
@@ -349,7 +349,7 @@ export default function ChatPage() {
 
           <div className="flex-1 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
             {sessions.map(s => (
-              <div 
+              <div
                 key={s._id}
                 onClick={() => handleSelectSession(s._id)}
                 className={`group flex items-center justify-between px-4 py-3 rounded-xl transition-all cursor-pointer ${activeSessionId === s._id ? 'bg-white/[0.08] border border-white/[0.1] shadow-sm' : 'bg-transparent border border-transparent hover:bg-white/[0.04]'}`}
@@ -357,11 +357,11 @@ export default function ChatPage() {
                 <div className={`truncate text-sm font-medium ${activeSessionId === s._id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
                   {s.title}
                 </div>
-                <button 
+                <button
                   onClick={(e) => handleDeleteSession(e, s._id)}
                   className="opacity-0 group-hover:opacity-100 p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-md transition-all"
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                 </button>
               </div>
             ))}
@@ -370,149 +370,147 @@ export default function ChatPage() {
 
         {/* ─── Chat Window ─── */}
         <div className="flex-1 flex flex-col bg-white/[0.02] backdrop-blur-xl border border-white/[0.08] rounded-3xl overflow-hidden shadow-2xl relative">
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 custom-scrollbar relative z-10">
-          {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center">
-              <div className="w-20 h-20 rounded-3xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mb-6 shadow-inner">
-                <svg className="w-10 h-10 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                </svg>
+          <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 custom-scrollbar relative z-10">
+            {messages.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-center">
+                <div className="w-20 h-20 rounded-3xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mb-6 shadow-inner">
+                  <svg className="w-10 h-10 text-indigo-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-semibold text-white">How can I help you today?</h2>
+                <p className="text-sm text-zinc-400 mt-2 max-w-md leading-relaxed">
+                  Try asking "Summarize my documents" to test the Local Router, or a complex synthesis question to test Cortex Ultra.
+                </p>
               </div>
-              <h2 className="text-xl font-semibold text-white">How can I help you today?</h2>
-              <p className="text-sm text-zinc-400 mt-2 max-w-md leading-relaxed">
-                Try asking "Summarize my documents" to test the Local Router, or a complex synthesis question to test Cortex Ultra.
-              </p>
-            </div>
-          ) : (
-            messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
+            ) : (
+              messages.map((msg) => (
                 <div
-                  className={`max-w-[85%] rounded-3xl px-6 py-4 ${
-                    msg.role === 'user'
-                      ? 'bg-white text-black rounded-tr-sm shadow-[0_0_15px_rgba(255,255,255,0.1)]'
-                      : 'bg-white/[0.04] border border-white/[0.08] text-zinc-200 rounded-tl-sm shadow-sm'
-                  }`}
+                  key={msg.id}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  {/* Source Badge (for AI) */}
-                  {msg.role === 'assistant' && msg.source && (
-                    <div className="flex flex-col gap-3 mb-4">
-                      <div className="flex items-center">
-                        <span
-                          className={`text-[9px] uppercase tracking-wider font-mono px-2 py-0.5 rounded-full flex items-center gap-1.5 ${
-                            msg.source === 'local'
-                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                              : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
-                          }`}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full ${msg.source === 'local' ? 'bg-emerald-400' : 'bg-indigo-400'}`} />
-                          {msg.source === 'local' ? 'Retrieved via Local Engine' : 'Synthesized by Cortex Ultra'}
-                        </span>
-                      </div>
+                  <div
+                    className={`max-w-[85%] rounded-3xl px-6 py-4 ${msg.role === 'user'
+                        ? 'bg-white text-black rounded-tr-sm shadow-[0_0_15px_rgba(255,255,255,0.1)]'
+                        : 'bg-white/[0.04] border border-white/[0.08] text-zinc-200 rounded-tl-sm shadow-sm'
+                      }`}
+                  >
+                    {/* Source Badge (for AI) */}
+                    {msg.role === 'assistant' && msg.source && (
+                      <div className="flex flex-col gap-3 mb-4">
+                        <div className="flex items-center">
+                          <span
+                            className={`text-[9px] uppercase tracking-wider font-mono px-2 py-0.5 rounded-full flex items-center gap-1.5 ${msg.source === 'local'
+                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                              }`}
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${msg.source === 'local' ? 'bg-emerald-400' : 'bg-indigo-400'}`} />
+                            {msg.source === 'local' ? 'Retrieved via Local Engine' : 'Synthesized by Cortex Ultra'}
+                          </span>
+                        </div>
 
-                      {/* GraphRAG Traversal Badge */}
-                      {msg.graphEdges && msg.graphEdges.length > 0 && (
-                        <div className="bg-fuchsia-500/10 border border-fuchsia-500/20 rounded-xl p-3 max-w-sm text-fuchsia-400 shadow-[0_0_15px_rgba(217,70,239,0.1)]">
-                          <div className="flex items-center gap-2 mb-2 text-[10px] font-semibold uppercase tracking-widest font-mono">
-                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <circle cx="18" cy="5" r="3"></circle>
-                              <circle cx="6" cy="12" r="3"></circle>
-                              <circle cx="18" cy="19" r="3"></circle>
-                              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                        {/* GraphRAG Traversal Badge */}
+                        {msg.graphEdges && msg.graphEdges.length > 0 && (
+                          <div className="bg-fuchsia-500/10 border border-fuchsia-500/20 rounded-xl p-3 max-w-sm text-fuchsia-400 shadow-[0_0_15px_rgba(217,70,239,0.1)]">
+                            <div className="flex items-center gap-2 mb-2 text-[10px] font-semibold uppercase tracking-widest font-mono">
+                              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="18" cy="5" r="3"></circle>
+                                <circle cx="6" cy="12" r="3"></circle>
+                                <circle cx="18" cy="19" r="3"></circle>
+                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                              </svg>
+                              GraphRAG Engine Activated
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {msg.graphEdges.slice(0, 3).map((edge, idx) => (
+                                <div key={idx} className="flex items-center gap-1.5 text-[10px] font-mono bg-fuchsia-500/10 px-2 py-1 rounded-md border border-fuchsia-500/20">
+                                  <span className="font-bold">{edge.source}</span>
+                                  <span className="text-fuchsia-500/60">→</span >
+                                  <span className="font-bold">{edge.target}</span>
+                                </div>
+                              ))}
+                              {msg.graphEdges.length > 3 && (
+                                <div className="text-[10px] font-mono text-fuchsia-400/60 self-center">
+                                  +{msg.graphEdges.length - 3} more paths
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="text-[15px] leading-relaxed whitespace-pre-wrap">
+                      {renderContentWithCitations(msg.content)}
+                      {msg.isStreaming && (
+                        <span className="inline-block w-2 h-4 ml-1.5 bg-indigo-500 animate-pulse rounded-sm align-middle" />
+                      )}
+                      {msg.content.includes('⚠️') && !msg.isStreaming && (
+                        <div className="mt-4">
+                          <button
+                            onClick={() => handleRetry(msg.id)}
+                            className="px-4 py-2 rounded-xl bg-[var(--bg-root)] text-[var(--text-secondary)] border border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--text-secondary)] transition-all text-sm font-semibold flex items-center gap-2"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                             </svg>
-                            GraphRAG Engine Activated
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {msg.graphEdges.slice(0, 3).map((edge, idx) => (
-                              <div key={idx} className="flex items-center gap-1.5 text-[10px] font-mono bg-fuchsia-500/10 px-2 py-1 rounded-md border border-fuchsia-500/20">
-                                <span className="font-bold">{edge.source}</span>
-                                <span className="text-fuchsia-500/60">→</span >
-                                <span className="font-bold">{edge.target}</span>
-                              </div>
-                            ))}
-                            {msg.graphEdges.length > 3 && (
-                              <div className="text-[10px] font-mono text-fuchsia-400/60 self-center">
-                                +{msg.graphEdges.length - 3} more paths
-                              </div>
-                            )}
-                          </div>
+                            Retry Request
+                          </button>
                         </div>
                       )}
                     </div>
-                  )}
-
-                  <div className="text-[15px] leading-relaxed whitespace-pre-wrap">
-                    {renderContentWithCitations(msg.content)}
-                    {msg.isStreaming && (
-                      <span className="inline-block w-2 h-4 ml-1.5 bg-indigo-500 animate-pulse rounded-sm align-middle" />
-                    )}
-                    {msg.content.includes('⚠️') && !msg.isStreaming && (
-                      <div className="mt-4">
-                        <button 
-                          onClick={() => handleRetry(msg.id)}
-                          className="px-4 py-2 rounded-xl bg-[var(--bg-root)] text-[var(--text-secondary)] border border-[var(--border)] hover:text-[var(--text-primary)] hover:border-[var(--text-secondary)] transition-all text-sm font-semibold flex items-center gap-2"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                          Retry Request
-                        </button>
-                      </div>
-                    )}
                   </div>
                 </div>
-              </div>
-            ))
-          )}
-          <div ref={messagesEndRef} className="h-4" />
-        </div>
+              ))
+            )}
+            <div ref={messagesEndRef} className="h-4" />
+          </div>
 
-        {/* Input Area */}
-        <div className="p-6 bg-gradient-to-t from-black/20 via-transparent to-transparent pt-4 border-t border-transparent">
-          <form onSubmit={handleSubmit} className="relative flex items-end max-w-4xl mx-auto">
-            <div className="relative w-full bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] focus-within:border-cyan-500/50 focus-within:ring-4 focus-within:ring-cyan-500/10 rounded-2xl transition-all shadow-sm">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit(e);
-                  }
-                }}
-                placeholder="Message Mindloom..."
-                className="w-full bg-transparent pl-5 pr-14 py-4 min-h-[60px] max-h-[200px] resize-none text-[15px] text-white placeholder-zinc-500 focus:outline-none"
-                rows={1}
-                disabled={isLoading}
-              />
-              <button
-                type="submit"
-                disabled={!input.trim() || isLoading}
-                className="absolute right-3 bottom-3 p-2 rounded-xl bg-white hover:bg-zinc-200 text-black disabled:opacity-30 disabled:hover:opacity-30 transition-all shadow-md active:scale-95"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13" />
-                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                </svg>
-              </button>
+          {/* Input Area */}
+          <div className="p-6 bg-gradient-to-t from-black/20 via-transparent to-transparent pt-4 border-t border-transparent">
+            <form onSubmit={handleSubmit} className="relative flex items-end max-w-4xl mx-auto">
+              <div className="relative w-full bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] focus-within:border-cyan-500/50 focus-within:ring-4 focus-within:ring-cyan-500/10 rounded-2xl transition-all shadow-sm">
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit(e);
+                    }
+                  }}
+                  placeholder="Message Mindloom..."
+                  className="w-full bg-transparent pl-5 pr-14 py-4 min-h-[60px] max-h-[200px] resize-none text-[15px] text-white placeholder-zinc-500 focus:outline-none"
+                  rows={1}
+                  disabled={isLoading}
+                />
+                <button
+                  type="submit"
+                  disabled={!input.trim() || isLoading}
+                  className="absolute right-3 bottom-3 p-2 rounded-xl bg-white hover:bg-zinc-200 text-black disabled:opacity-30 disabled:hover:opacity-30 transition-all shadow-md active:scale-95"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13" />
+                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                  </svg>
+                </button>
+              </div>
+            </form>
+            <div className="text-center mt-3">
+              <span className="text-[11px] text-zinc-600 font-medium tracking-wider">
+                MindLoom Cortex Ultra Hybrid Engine • AI can make mistakes.
+              </span>
             </div>
-          </form>
-          <div className="text-center mt-3">
-            <span className="text-[11px] text-zinc-600 font-medium tracking-wider">
-              MindLoom Cortex Ultra Hybrid Engine • AI can make mistakes.
-            </span>
           </div>
         </div>
       </div>
-    </div>
 
       {/* Citation Modal */}
       {selectedCitationId && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6" onClick={() => setSelectedCitationId(null)}>
-          <div 
+          <div
             className="w-full max-w-lg bg-zinc-950/90 backdrop-blur-2xl border border-white/[0.08] rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col"
             onClick={e => e.stopPropagation()}
           >
